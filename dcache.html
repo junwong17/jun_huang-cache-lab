@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Jun Huang Cache and CPU Visualization Lab</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: #e8eef7;
+      background:
+        radial-gradient(circle at top left, #183354 0, transparent 35%),
+        linear-gradient(135deg, #07111f, #0d1b2d);
+    }
+
+    header {
+      padding: 64px 24px 40px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0 0 16px;
+      font-size: clamp(32px, 5vw, 58px);
+      color: #6db6ff;
+    }
+
+    header p {
+      margin: 8px 0;
+      color: #aebfd3;
+      font-size: 18px;
+    }
+
+    main {
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto 48px;
+    }
+
+    .status {
+      margin-bottom: 24px;
+      padding: 18px 22px;
+      border: 1px solid #287653;
+      border-radius: 12px;
+      color: #a8f0cc;
+      background: #0f3327;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      min-height: 210px;
+      padding: 24px;
+      border: 1px solid #294a70;
+      border-radius: 16px;
+      background: rgba(15, 34, 57, 0.88);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: #74b9ff;
+    }
+
+    .card p,
+    .card li {
+      color: #becbdb;
+      line-height: 1.7;
+    }
+
+    code {
+      color: #7fe5b6;
+    }
+
+    footer {
+      padding: 28px 16px;
+      text-align: center;
+      color: #8295aa;
+      border-top: 1px solid #1e3857;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Jun Huang Cache & CPU Visualization Lab</h1>
+    <p>KR4 32-bit RISC-V CPU、I-Cache、D-Cache与MESI可视化实验室</p>
+    <p>GitHub：junwong17</p>
+  </header>
+
+  <main>
+    <section class="status">
+      ✅ GitHub Pages基础网站已经建立，交互式Cache动画正在开发中。
+    </section>
+
+    <section class="cards">
+      <article class="card">
+        <h2>KR4 D-Cache</h2>
+        <ul>
+          <li>8 KB、64 Sets、4 Ways</li>
+          <li>32 Byte Cache Line</li>
+          <li>Read/Write Hit与Miss</li>
+          <li>LRU、Refill与Write Back</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>KR4 I-Cache</h2>
+        <ul>
+          <li>8 KB、64 Sets、4 Ways</li>
+          <li>Critical Word First</li>
+          <li>Wrap Refill</li>
+          <li>Line Buffer与Early Restart</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>MESI Coherence</h2>
+        <ul>
+          <li>多个CPU私有Cache</li>
+          <li>Modified、Exclusive、Shared、Invalid</li>
+          <li>BusRd、BusRdX、BusUpgr</li>
+          <li>Snoop与Cache-to-Cache Transfer</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>开发计划</h2>
+        <p>
+          下一版本将加入地址输入、Tag/Set/Offset解析、
+          Cache访问动画、单步运行和预置KR4测试序列。
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    Designed by Jun Huang · Jun Huang Cache and CPU Visualization Lab
+  </footer>
+</body>
+</html>
