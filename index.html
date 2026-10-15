@@ -92,6 +92,24 @@
       color: #8295aa;
       border-top: 1px solid #1e3857;
     }
+.launch-button {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 16px;
+  color: #ffffff;
+  text-decoration: none;
+  border: 1px solid #438bd0;
+  border-radius: 8px;
+  background: #1764a3;
+  transition: 0.15s ease;
+}
+
+.launch-button:hover {
+  transform: translateY(-1px);
+  background: #2480c8;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+    
   </style>
 </head>
 
@@ -108,15 +126,20 @@
     </section>
 
     <section class="cards">
-      <article class="card">
-        <h2>KR4 D-Cache</h2>
-        <ul>
-          <li>8 KB、64 Sets、4 Ways</li>
-          <li>32 Byte Cache Line</li>
-          <li>Read/Write Hit与Miss</li>
-          <li>LRU、Refill与Write Back</li>
-        </ul>
-      </article>
+<article class="card">
+  <h2>KR4 D-Cache</h2>
+  <ul>
+    <li>8 KB、64 Sets、4 Ways</li>
+    <li>32 Byte Cache Line</li>
+    <li>Read/Write Hit与Miss</li>
+    <li>Replacement、Refill与Write Back</li>
+  </ul>
+
+  <a class="launch-button" href="./dcache.html">
+    打开D-Cache模拟器 →
+  </a>
+</article>
+
 
       <article class="card">
         <h2>KR4 I-Cache</h2>
