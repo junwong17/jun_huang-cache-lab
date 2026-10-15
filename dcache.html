@@ -388,7 +388,8 @@
   <header>
     <h1>Jun Huang KR4 D-Cache Simulator</h1>
     <p>KR4 32-bit RISC-V · 8 KB · 64 Sets · 4 Ways · True LRU</p>
-    <p>V0.2 · GitHub：junwong17</p>
+    <p>V0.3 · GitHub：junwong17</p>
+
 
     <nav>
       <a href="./index.html">← 返回首页</a>
@@ -452,6 +453,9 @@
           <button id="stepBtn" class="yellow">单步执行队列</button>
           <button id="playBtn">自动播放</button>
           <button id="pauseBtn">暂停</button>
+          <button id="dwbBtn" class="green">DWB</button>
+          <button id="dinvBtn" class="red">DInv</button>
+          <button id="dwbinvBtn" class="yellow">DWBInv</button>
           <button id="resetBtn" class="red">重置Cache</button>
         </div>
 
@@ -542,34 +546,56 @@
         <div id="sramRow" class="sram-row"></div>
       </div>
 
-      <div class="panel">
-        <h2>4. 当前Set Metadata SRAM</h2>
+<div class="panel">
+  <h2>4. 当前Set Metadata SRAM</h2>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Way</th>
-                <th>Metadata位段</th>
-                <th>Valid</th>
-                <th>Dirty</th>
-                <th>Tag</th>
-                <th>LRU Rank</th>
-                <th>25-bit值</th>
-              </tr>
-            </thead>
+  <div class="signal-grid">
+    <div class="signal">
+      Replacement[99:92]
+      <strong id="replacementValue">0xE4</strong>
+    </div>
 
-            <tbody id="metadataBody"></tbody>
-          </table>
-        </div>
+    <div class="signal">
+      MRU → LRU
+      <strong id="replacementOrder">
+        Way0 → Way1 → Way2 → Way3
+      </strong>
+    </div>
 
-        <p class="mapping">
-          <code>Rank 0 = MRU</code>，
-          <code>Rank 3 = LRU/Victim</code>。<br>
-          每Way Metadata：
-          <code>{LRU[1:0], Valid, Dirty, Tag[20:0]}</code>
-        </p>
-      </div>
+    <div class="signal">
+      Victim候选
+      <strong id="victimValue">Way3</strong>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Way</th>
+          <th>Metadata位段</th>
+          <th>Data位段</th>
+          <th>Valid</th>
+          <th>Dirty</th>
+          <th>Tag</th>
+          <th>LRU Rank</th>
+          <th>23-bit值</th>
+        </tr>
+      </thead>
+
+      <tbody id="metadataBody"></tbody>
+    </table>
+  </div>
+
+  <p class="mapping">
+    <code>Metadata[99:92] = 8-bit True LRU</code><br>
+    <code>Metadata[91:0] = 4 × 23-bit Way Metadata</code><br>
+    每Way Metadata：
+    <code>{Valid, Dirty, Tag[20:0]}</code><br>
+    <code>Rank 0 = MRU</code>，
+    <code>Rank 3 = LRU/Victim</code>
+  </p>
+</div>
     </section>
 
     <section class="grid2">
@@ -588,11 +614,18 @@
           <code>[63:32] = Way 1</code><br>
           <code>[31:0] = Way 0</code><br><br>
 
-          <strong>Metadata SRAM：64 × 100 bit</strong><br>
-          <code>[99:75] = Way 3</code><br>
-          <code>[74:50] = Way 2</code><br>
-          <code>[49:25] = Way 1</code><br>
-          <code>[24:0] = Way 0</code><br><br>
+<strong>Metadata SRAM：64 × 100 bit</strong><br>
+<code>[99:92] = 8-bit True LRU Replacement</code><br>
+<code>[91:69] = Way 3 Metadata</code><br>
+<code>[68:46] = Way 2 Metadata</code><br>
+<code>[45:23] = Way 1 Metadata</code><br>
+<code>[22:0] = Way 0 Metadata</code><br><br>
+
+<strong>每Way Metadata：23 bit</strong><br>
+<code>[22] = Valid</code><br>
+<code>[21] = Dirty</code><br>
+<code>[20:0] = Tag</code><br><br>
+
 
           <strong>SRAM有效条件</strong><br>
           Read：<code>ME=1, WE=0</code><br>
@@ -823,6 +856,162 @@
       way.dirty = false;
     }
 
+    function invalidateAllCache() {
+  for (let setIndex = 0; setIndex < SETS; setIndex++) {
+    const set = cache[setIndex];
+
+    for (let wayIndex = 0; wayIndex < WAYS; wayIndex++) {
+      const way = set.ways[wayIndex];
+
+      /*
+       * Invalidate只清Metadata。
+       * Data SRAM不需要清零。
+       */
+      way.valid = false;
+      way.dirty = false;
+      way.tag = 0;
+    }
+
+    /*
+     * 恢复Replacement初始值：
+     * [Way0,Way1,Way2,Way3] = [0,1,2,3]
+     * 编码为0xE4。
+     */
+    set.lruRank = [0, 1, 2, 3];
+  }
+}
+
+function executeDwb() {
+  pause();
+
+  let dirtyLines = 0;
+
+  log(
+    "DWB开始：扫描64 Sets × 4 Ways。",
+    "meta"
+  );
+
+  for (let setIndex = 0; setIndex < SETS; setIndex++) {
+    for (let wayIndex = 0; wayIndex < WAYS; wayIndex++) {
+      const way = cache[setIndex].ways[wayIndex];
+
+      if (way.valid && way.dirty) {
+        dirtyLines++;
+
+        /*
+         * writeBack会读取8个Word并写入DDR，
+         * 然后将Dirty清零。
+         */
+        writeBack(setIndex, wayIndex);
+      }
+    }
+  }
+
+  setSignals(0, 0, -1);
+  render();
+
+  showResult(
+    `DWB完成：共写回${dirtyLines}条Dirty Line；` +
+    "Valid和Tag保留，Dirty清零。",
+    "info"
+  );
+
+  log(
+    `DWB完成：处理${dirtyLines}条Dirty Line。`,
+    "meta"
+  );
+}
+
+function executeDinv() {
+  pause();
+
+  let discardedDirtyLines = 0;
+  let validLines = 0;
+
+  for (let setIndex = 0; setIndex < SETS; setIndex++) {
+    for (let wayIndex = 0; wayIndex < WAYS; wayIndex++) {
+      const way = cache[setIndex].ways[wayIndex];
+
+      if (way.valid) {
+        validLines++;
+      }
+
+      if (way.valid && way.dirty) {
+        discardedDirtyLines++;
+      }
+    }
+  }
+
+  /*
+   * DInv不会先写回Dirty数据。
+   */
+  invalidateAllCache();
+
+  highlightedWay = -1;
+  setSignals(0, 0, -1);
+  render();
+
+  showResult(
+    `DInv完成：Invalidate ${validLines}条有效Line；` +
+    `直接丢弃${discardedDirtyLines}条Dirty Line；` +
+    "Replacement恢复0xE4。",
+    "info"
+  );
+
+  log(
+    `DInv：未执行Write-back，` +
+    `丢弃${discardedDirtyLines}条Dirty Line。`,
+    "meta"
+  );
+}
+
+function executeDwbInv() {
+  pause();
+
+  let dirtyLines = 0;
+  let validLines = 0;
+
+  log(
+    "DWBInv开始：先写回Dirty Line，再Invalidate。",
+    "meta"
+  );
+
+  for (let setIndex = 0; setIndex < SETS; setIndex++) {
+    for (let wayIndex = 0; wayIndex < WAYS; wayIndex++) {
+      const way = cache[setIndex].ways[wayIndex];
+
+      if (way.valid) {
+        validLines++;
+      }
+
+      if (way.valid && way.dirty) {
+        dirtyLines++;
+        writeBack(setIndex, wayIndex);
+      }
+    }
+  }
+
+  invalidateAllCache();
+
+  highlightedWay = -1;
+  setSignals(0, 0, -1);
+  render();
+
+  showResult(
+    `DWBInv完成：先写回${dirtyLines}条Dirty Line，` +
+    `再Invalidate ${validLines}条有效Line；` +
+    "Replacement恢复0xE4。",
+    "info"
+  );
+
+  log(
+    `DWBInv完成：Write-back ${dirtyLines}条，` +
+    `Invalidate ${validLines}条。`,
+    "meta"
+  );
+}
+
+    
     function refill(decoded, wayIndex) {
       const way = cache[decoded.set].ways[wayIndex];
 
@@ -1008,30 +1197,69 @@
       $("wemValue").textContent = groups.join("_");
     }
 
-    function metadataValue(setIndex, wayIndex) {
-      const way = cache[setIndex].ways[wayIndex];
-      const rank = cache[setIndex].lruRank[wayIndex];
+function metadataValue(setIndex, wayIndex) {
+  const way = cache[setIndex].ways[wayIndex];
 
-      /*
-       * 25-bit：
-       * [24:23] LRU
-       * [22] Valid
-       * [21] Dirty
-       * [20:0] Tag
-       */
-      return (
-        (rank << 23) |
-        ((way.valid ? 1 : 0) << 22) |
-        ((way.dirty ? 1 : 0) << 21) |
-        (way.tag & 0x1FFFFF)
-      ) >>> 0;
-    }
+  /*
+   * 每个Way Metadata为23 bit：
+   * [22]   Valid
+   * [21]   Dirty
+   * [20:0] Tag
+   *
+   * LRU不在这里，而是在Metadata[99:92]。
+   */
+  return (
+    ((way.valid ? 1 : 0) << 22) |
+    ((way.dirty ? 1 : 0) << 21) |
+    (way.tag & 0x1FFFFF)
+  ) >>> 0;
+}
 
-    function metadataRange(way) {
-      const low = way * 25;
-      const high = low + 24;
-      return `[${high}:${low}]`;
-    }
+
+function metadataRange(way) {
+  const low = way * 23;
+  const high = low + 22;
+
+  return `[${high}:${low}]`;
+}
+
+function replacementValue(setIndex) {
+  const rank = cache[setIndex].lruRank;
+
+  /*
+   * Replacement[99:92]：
+   *
+   * bits [1:0] = Way0 Rank
+   * bits [3:2] = Way1 Rank
+   * bits [5:4] = Way2 Rank
+   * bits [7:6] = Way3 Rank
+   *
+   * 初始rank = [0,1,2,3]
+   * 编码结果 = 11_10_01_00 = 0xE4
+   */
+  return (
+    ((rank[3] & 0x3) << 6) |
+    ((rank[2] & 0x3) << 4) |
+    ((rank[1] & 0x3) << 2) |
+    (rank[0] & 0x3)
+  ) & 0xFF;
+}
+
+function replacementOrder(setIndex) {
+  return [0, 1, 2, 3]
+    .sort(
+      (a, b) =>
+        cache[setIndex].lruRank[a] -
+        cache[setIndex].lruRank[b]
+    )
+    .map(way => `Way${way}`)
+    .join(" → ");
+}
+
+function lruVictim(setIndex) {
+  const rank = cache[setIndex].lruRank;
+  return rank.findIndex(value => value === 3);
+}
 
     function render() {
       let setIndex =
@@ -1043,6 +1271,19 @@
 
       setIndex = Math.max(0, Math.min(63, setIndex));
       $("displaySet").value = setIndex;
+
+      $("replacementValue").textContent =
+  hex(replacementValue(setIndex), 2);
+
+$("replacementOrder").textContent =
+  replacementOrder(setIndex);
+
+const victim = lruVictim(setIndex);
+
+$("victimValue").textContent =
+  victim >= 0
+    ? `Way${victim}`
+    : "—";
 
       const body = $("metadataBody");
       body.innerHTML = "";
@@ -1058,25 +1299,46 @@
           row.className = "selected";
         }
 
-        row.innerHTML = `
-          <td>Way ${way}</td>
-          <td>${metadataRange(way)}</td>
-          <td class="${line.valid ? "valid" : ""}">
-            ${line.valid ? 1 : 0}
-          </td>
-          <td class="${line.dirty ? "dirty" : ""}">
-            ${line.dirty ? 1 : 0}
-          </td>
-          <td>${line.valid ? hex(line.tag, 5) : "—"}</td>
-          <td>
-            ${cache[setIndex].lruRank[way]}
-            ${cache[setIndex].lruRank[way] === 0 ? "(MRU)" : ""}
-            ${cache[setIndex].lruRank[way] === 3 ? "(LRU)" : ""}
-          </td>
-          <td>
-            ${hex(metadataValue(setIndex, way), 7)}
-          </td>
-        `;
+ row.innerHTML = `
+  <td>Way ${way}</td>
+
+  <td>${metadataRange(way)}</td>
+
+  <td>
+    [${way * 32 + 31}:${way * 32}]
+  </td>
+
+  <td class="${line.valid ? "valid" : ""}">
+    ${line.valid ? 1 : 0}
+  </td>
+
+  <td class="${line.dirty ? "dirty" : ""}">
+    ${line.dirty ? 1 : 0}
+  </td>
+
+  <td>
+    ${line.valid ? hex(line.tag, 5) : "—"}
+  </td>
+
+  <td>
+    ${cache[setIndex].lruRank[way]}
+    ${
+      cache[setIndex].lruRank[way] === 0
+        ? "(MRU)"
+        : ""
+    }
+    ${
+      cache[setIndex].lruRank[way] === 3
+        ? "(LRU)"
+        : ""
+    }
+  </td>
+
+  <td>
+    ${hex(metadataValue(setIndex, way), 6)}
+  </td>
+`;
+
 
         body.appendChild(row);
       }
@@ -1307,6 +1569,21 @@
         // 输入尚未完整时保持原显示。
       }
     });
+
+    $("dwbBtn").addEventListener(
+  "click",
+  executeDwb
+);
+
+$("dinvBtn").addEventListener(
+  "click",
+  executeDinv
+);
+
+$("dwbinvBtn").addEventListener(
+  "click",
+  executeDwbInv
+);
 
     resetCache();
   </script>
