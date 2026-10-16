@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Jun Huang KR4 D-Cache Simulator</title>
+
+  <style>
+    :root {
+      --bg: #071321;
+      --panel: #10253c;
+      --panel2: #0a1c2e;
+      --border: #31577d;
+      --blue: #69b5ff;
+      --green: #62d69a;
+      --yellow: #ffd166;
+      --red: #ff7b7b;
+      --text: #e8f0fa;
+      --muted: #9eb1c7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 10% 0, #193a60 0, transparent 30%),
+        linear-gradient(135deg, #06101d, #0b1c2e);
+    }
+
+    a {
+      color: var(--blue);
+    }
+
+    header {
+      padding: 28px 20px;
+      text-align: center;
+      border-bottom: 1px solid #294661;
+    }
+
+    header h1 {
+      margin: 0 0 10px;
+      color: var(--blue);
+      font-size: clamp(28px, 4vw, 46px);
+    }
+
+    header p {
+      margin: 6px;
+      color: var(--muted);
+    }
+
+    nav {
+      margin-top: 14px;
+    }
+
+    nav a {
+      display: inline-block;
+      padding: 8px 14px;
+      text-decoration: none;
+      border: 1px solid #3972a6;
+      border-radius: 8px;
+      background: #12395e;
+    }
+
+    main {
+      width: min(1450px, calc(100% - 28px));
+      margin: 20px auto 50px;
+    }
+
+    .notice {
+      margin-bottom: 16px;
+      padding: 13px 16px;
+      color: #bdf2d4;
+      border: 1px solid #347a58;
+      border-radius: 10px;
+      background: #0e432f;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .panel {
+      padding: 17px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(16, 37, 60, 0.95);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+    }
+
+    .panel h2 {
+      margin: 0 0 14px;
+      color: var(--blue);
+      font-size: 20px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(140px, 1fr));
+      gap: 11px;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input,
+    select,
+    button {
+      min-height: 39px;
+      padding: 8px 11px;
+      color: var(--text);
+      font: inherit;
+      border: 1px solid #396489;
+      border-radius: 8px;
+      background: #091b2e;
+    }
+
+    button {
+      cursor: pointer;
+      background: #1763a0;
+    }
+
+    button:hover {
+      background: #227bbb;
+    }
+
+    button.green {
+      border-color: #31815b;
+      background: #176341;
+    }
+
+    button.yellow {
+      color: #221800;
+      border-color: #b98c20;
+      background: #d9ac39;
+    }
+
+    button.red {
+      border-color: #9c4b4b;
+      background: #813737;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .decode {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 9px;
+    }
+
+    .decode-item {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #315574;
+      border-radius: 8px;
+      background: #091d30;
+    }
+
+    .decode-item small {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+    }
+
+    .decode-item strong {
+      color: #8ed0ff;
+      font-family: Consolas, monospace;
+    }
+
+    .result {
+      margin-top: 12px;
+      min-height: 48px;
+      padding: 12px;
+      border: 1px solid #365b7f;
+      border-radius: 8px;
+      background: #081929;
+    }
+
+    .hit {
+      color: var(--green);
+    }
+
+    .miss {
+      color: var(--red);
+    }
+
+    .info {
+      color: var(--yellow);
+    }
+
+    .signal-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      margin-bottom: 12px;
+    }
+
+    .signal {
+      padding: 11px;
+      text-align: center;
+      border: 1px solid #315574;
+      border-radius: 8px;
+      background: #091d30;
+    }
+
+    .signal strong {
+      display: block;
+      margin-top: 5px;
+      color: var(--yellow);
+      font-family: Consolas, monospace;
+    }
+
+    .wem {
+      padding: 11px;
+      overflow-wrap: anywhere;
+      color: #90d4ff;
+      border: 1px solid #315574;
+      border-radius: 8px;
+      background: #071725;
+      font-family: Consolas, monospace;
+    }
+
+    .sram-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .slice {
+      min-height: 105px;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #315574;
+      border-radius: 9px;
+      background: #091d30;
+    }
+
+    .slice.active {
+      border-color: var(--yellow);
+      background: #594719;
+      box-shadow: 0 0 15px rgba(255, 209, 102, 0.3);
+    }
+
+    .slice strong,
+    .slice small,
+    .slice code {
+      display: block;
+      margin: 4px 0;
+    }
+
+    .slice small {
+      color: var(--muted);
+    }
+
+    .slice code {
+      color: #8ed0ff;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 9px 7px;
+      text-align: center;
+      white-space: nowrap;
+      border: 1px solid #2d4d69;
+    }
+
+    th {
+      color: #acd6ff;
+      background: #112d49;
+    }
+
+    td {
+      background: #091d30;
+    }
+
+    tr.selected td {
+      background: #244d35;
+    }
+
+    .valid {
+      color: var(--green);
+      font-weight: bold;
+    }
+
+    .dirty {
+      color: var(--yellow);
+      font-weight: bold;
+    }
+
+    .log {
+      height: 310px;
+      padding: 11px;
+      overflow: auto;
+      border: 1px solid #2e506d;
+      border-radius: 8px;
+      background: #061522;
+      font: 12px/1.65 Consolas, monospace;
+    }
+
+    .log div {
+      padding: 3px 0;
+      border-bottom: 1px dashed rgba(100, 130, 160, 0.2);
+    }
+
+    .log-hit {
+      color: #7fe1ad;
+    }
+
+    .log-miss {
+      color: #ff9999;
+    }
+
+    .log-ddr {
+      color: #ffd475;
+    }
+
+    .log-meta {
+      color: #8dcaff;
+    }
+
+    .mapping {
+      line-height: 1.75;
+      color: #c1cede;
+    }
+
+    code {
+      color: #8ed0ff;
+    }
+
+    footer {
+      padding: 25px;
+      text-align: center;
+      color: #8296aa;
+      border-top: 1px solid #294661;
+    }
+
+    @media (max-width: 950px) {
+      .grid2 {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 650px) {
+      .controls,
+      .decode,
+      .signal-grid,
+      .sram-row {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Jun Huang KR4 D-Cache Simulator</h1>
+    <p>KR4 32-bit RISC-V · 8 KB · 64 Sets · 4 Ways · True LRU</p>
+    <p>V0.3 · GitHub：junwong17</p>
+
+
+    <nav>
+      <a href="./index.html">← 返回首页</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="notice">
+      ✅ 已确认物理映射：Way0=[31:0]、Way1=[63:32]、
+      Way2=[95:64]、Way3=[127:96]。ME、WE、WEM均为高有效。
+    </div>
+
+    <section class="grid2">
+      <div class="panel">
+        <h2>1. CPU访问控制</h2>
+
+        <div class="controls">
+          <label>
+            操作
+            <select id="operation">
+              <option value="read">Read / Load</option>
+              <option value="write">Write / Store</option>
+            </select>
+          </label>
+
+          <label>
+            地址
+            <input id="address" value="0x60000000">
+          </label>
+
+          <label>
+            Write Data
+            <input id="writeData" value="0x00000010">
+          </label>
+
+          <label>
+            Write Hit策略
+            <select id="writePolicy">
+              <option value="wb">Write Back</option>
+              <option value="wt">Write Through</option>
+            </select>
+          </label>
+
+          <label>
+            Write Miss策略
+            <select id="allocatePolicy">
+              <option value="wa">Write Allocate</option>
+              <option value="nwa">Non-write-allocate</option>
+            </select>
+          </label>
+
+          <label>
+            显示Set
+            <input id="displaySet" type="number" min="0" max="63" value="0">
+          </label>
+        </div>
+
+        <div class="buttons">
+          <button id="executeBtn">执行单笔访问</button>
+          <button id="scenarioBtn" class="green">载入KR4 WT+NWA场景</button>
+          <button id="stepBtn" class="yellow">单步执行队列</button>
+          <button id="playBtn">自动播放</button>
+          <button id="pauseBtn">暂停</button>
+          <button id="dwbBtn" class="green">DWB</button>
+          <button id="dinvBtn" class="red">DInv</button>
+          <button id="dwbinvBtn" class="yellow">DWBInv</button>
+          <button id="resetBtn" class="red">重置Cache</button>
+        </div>
+
+        <div id="queueText" class="result info">
+          队列：0 / 0
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>2. 地址分解</h2>
+
+        <div class="decode">
+          <div class="decode-item">
+            <small>Tag [31:11]</small>
+            <strong id="tagValue">0xC0000</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Set [10:5]</small>
+            <strong id="setValue">0</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Word [4:2]</small>
+            <strong id="wordValue">0</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Byte [1:0]</small>
+            <strong id="byteValue">0</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Line Base</small>
+            <strong id="lineBase">0x60000000</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>ADR_0 [10:2]</small>
+            <strong id="adr0Value">0x000</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>ADR_1 [10:5]</small>
+            <strong id="adr1Value">0x00</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Cache Line</small>
+            <strong>32 Bytes</strong>
+          </div>
+        </div>
+
+        <div id="resultBox" class="result">
+          等待CPU访问。
+        </div>
+      </div>
+    </section>
+
+    <section class="grid2">
+      <div class="panel">
+        <h2>3. Data SRAM控制信号</h2>
+
+        <div class="signal-grid">
+          <div class="signal">
+            ME
+            <strong id="meValue">0</strong>
+          </div>
+
+          <div class="signal">
+            WE
+            <strong id="weValue">0</strong>
+          </div>
+
+          <div class="signal">
+            操作
+            <strong id="sramOperation">Idle</strong>
+          </div>
+        </div>
+
+        <div class="wem">
+          WEM[127:0] =
+          <span id="wemValue">
+            00000000_00000000_00000000_00000000
+          </span>
+        </div>
+
+        <div id="sramRow" class="sram-row"></div>
+      </div>
+
+<div class="panel">
+  <h2>4. 当前Set Metadata SRAM</h2>
+
+  <div class="signal-grid">
+    <div class="signal">
+      Replacement[99:92]
+      <strong id="replacementValue">0xE4</strong>
+    </div>
+
+    <div class="signal">
+      MRU → LRU
+      <strong id="replacementOrder">
+        Way0 → Way1 → Way2 → Way3
+      </strong>
+    </div>
+
+    <div class="signal">
+      Victim候选
+      <strong id="victimValue">Way3</strong>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Way</th>
+          <th>Metadata位段</th>
+          <th>Data位段</th>
+          <th>Valid</th>
+          <th>Dirty</th>
+          <th>Tag</th>
+          <th>LRU Rank</th>
+          <th>23-bit值</th>
+        </tr>
+      </thead>
+
+      <tbody id="metadataBody"></tbody>
+    </table>
+  </div>
+
+  <p class="mapping">
+    <code>Metadata[99:92] = 8-bit True LRU</code><br>
+    <code>Metadata[91:0] = 4 × 23-bit Way Metadata</code><br>
+    每Way Metadata：
+    <code>{Valid, Dirty, Tag[20:0]}</code><br>
+    <code>Rank 0 = MRU</code>，
+    <code>Rank 3 = LRU/Victim</code>
+  </p>
+</div>
+    </section>
+
+    <section class="grid2">
+      <div class="panel">
+        <h2>5. 逐笔事务日志</h2>
+        <div id="eventLog" class="log"></div>
+      </div>
+
+      <div class="panel">
+        <h2>6. 已确认的物理组织</h2>
+
+        <div class="mapping">
+          <strong>Data SRAM：512 × 128 bit</strong><br>
+          <code>[127:96] = Way 3</code><br>
+          <code>[95:64] = Way 2</code><br>
+          <code>[63:32] = Way 1</code><br>
+          <code>[31:0] = Way 0</code><br><br>
+
+<strong>Metadata SRAM：64 × 100 bit</strong><br>
+<code>[99:92] = 8-bit True LRU Replacement</code><br>
+<code>[91:69] = Way 3 Metadata</code><br>
+<code>[68:46] = Way 2 Metadata</code><br>
+<code>[45:23] = Way 1 Metadata</code><br>
+<code>[22:0] = Way 0 Metadata</code><br><br>
+
+<strong>每Way Metadata：23 bit</strong><br>
+<code>[22] = Valid</code><br>
+<code>[21] = Dirty</code><br>
+<code>[20:0] = Tag</code><br><br>
+
+
+          <strong>SRAM有效条件</strong><br>
+          Read：<code>ME=1, WE=0</code><br>
+          Write：<code>ME=1, WE=1, WEM目标bit=1</code>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Designed by Jun Huang · Jun Huang Cache and CPU Visualization Lab
+  </footer>
+
+  <script>
+    "use strict";
+
+    const SETS = 64;
+    const WAYS = 4;
+    const WORDS = 8;
+
+    let cache = [];
+    let memory = new Map();
+    let queue = [];
+    let queueIndex = 0;
+    let timer = null;
+
+    let currentSet = 0;
+    let currentWord = 0;
+    let highlightedWay = -1;
+
+    const $ = id => document.getElementById(id);
+
+    function hex(value, width = 8) {
+      return "0x" +
+        (value >>> 0)
+          .toString(16)
+          .toUpperCase()
+          .padStart(width, "0");
+    }
+
+    function parseHex(text) {
+      const value = String(text).trim();
+
+      if (/^0x[0-9a-f]+$/i.test(value)) {
+        return Number.parseInt(value.slice(2), 16) >>> 0;
+      }
+
+      if (/^[0-9a-f]+$/i.test(value)) {
+        return Number.parseInt(value, 16) >>> 0;
+      }
+
+      throw new Error("请输入有效的十六进制数值。");
+    }
+
+    function decode(address) {
+      address >>>= 0;
+
+      return {
+        address,
+        tag: address >>> 11,
+        set: (address >>> 5) & 0x3F,
+        word: (address >>> 2) & 0x7,
+        byte: address & 0x3,
+        lineBase: address & 0xFFFFFFE0,
+        adr0: (address >>> 2) & 0x1FF,
+        adr1: (address >>> 5) & 0x3F
+      };
+    }
+
+    function newWay() {
+      return {
+        valid: false,
+        dirty: false,
+        tag: 0,
+        data: new Array(WORDS).fill(0)
+      };
+    }
+
+    function resetCache() {
+      pause();
+
+      cache = [];
+
+      for (let set = 0; set < SETS; set++) {
+        cache.push({
+          ways: Array.from({ length: WAYS }, newWay),
+
+          /*
+           * lruRank[way]:
+           * 0 = MRU
+           * 3 = LRU
+           */
+          lruRank: [0, 1, 2, 3]
+        });
+      }
+
+      memory = new Map();
+      queue = [];
+      queueIndex = 0;
+      currentSet = 0;
+      currentWord = 0;
+      highlightedWay = -1;
+
+      $("displaySet").value = 0;
+      $("eventLog").innerHTML = "";
+
+      setSignals(0, 0, -1);
+      updateDecode(decode(parseHex($("address").value)));
+      updateQueue();
+      render();
+
+      showResult(
+        "Cache已重置：所有Way均为Invalid。",
+        "info"
+      );
+
+      log(
+        "Reset：64 Sets × 4 Ways，True LRU初始化完成。",
+        "meta"
+      );
+    }
+
+    function memoryRead(address) {
+      const aligned = address & 0xFFFFFFFC;
+
+      if (!memory.has(aligned)) {
+        memory.set(
+          aligned,
+          (aligned ^ 0x5A5A0000) >>> 0
+        );
+      }
+
+      return memory.get(aligned) >>> 0;
+    }
+
+    function memoryWrite(address, data) {
+      const aligned = address & 0xFFFFFFFC;
+      memory.set(aligned, data >>> 0);
+
+      log(
+        `DDR Write ${hex(aligned)} ← ${hex(data)}`,
+        "ddr"
+      );
+    }
+
+    function findHit(decoded) {
+      return cache[decoded.set].ways.findIndex(
+        way => way.valid && way.tag === decoded.tag
+      );
+    }
+
+    function touchWay(setIndex, accessedWay) {
+      const rank = cache[setIndex].lruRank;
+      const oldRank = rank[accessedWay];
+
+      for (let way = 0; way < WAYS; way++) {
+        if (
+          way !== accessedWay &&
+          rank[way] < oldRank
+        ) {
+          rank[way]++;
+        }
+      }
+
+      rank[accessedWay] = 0;
+    }
+
+    function chooseVictim(setIndex) {
+      const set = cache[setIndex];
+
+      /*
+       * 优先选择Invalid中Rank最大的Way。
+       */
+      let invalidWay = -1;
+      let largestRank = -1;
+
+      for (let way = 0; way < WAYS; way++) {
+        if (
+          !set.ways[way].valid &&
+          set.lruRank[way] > largestRank
+        ) {
+          invalidWay = way;
+          largestRank = set.lruRank[way];
+        }
+      }
+
+      if (invalidWay >= 0) {
+        return invalidWay;
+      }
+
+      /*
+       * 全部Valid时，严格选择Rank 3。
+       */
+      return set.lruRank.findIndex(rank => rank === 3);
+    }
+
+    function victimLineBase(tag, setIndex) {
+      return (
+        ((tag << 11) >>> 0) |
+        ((setIndex & 0x3F) << 5)
+      ) >>> 0;
+    }
+
+    function writeBack(setIndex, wayIndex) {
+      const way = cache[setIndex].ways[wayIndex];
+
+      if (!way.valid || !way.dirty) {
+        return;
+      }
+
+      const base = victimLineBase(
+        way.tag,
+        setIndex
+      );
+
+      log(
+        `Dirty victim：Set ${setIndex} Way ${wayIndex}，整行Write-back。`,
+        "ddr"
+      );
+
+      for (let word = 0; word < WORDS; word++) {
+        memoryWrite(
+          base + word * 4,
+          way.data[word]
+        );
+      }
+
+      way.dirty = false;
+    }
+
+    function invalidateAllCache() {
+  for (let setIndex = 0; setIndex < SETS; setIndex++) {
+    const set = cache[setIndex];
+
+    for (let wayIndex = 0; wayIndex < WAYS; wayIndex++) {
+      const way = set.ways[wayIndex];
+
+      /*
+       * Invalidate只清Metadata。
+       * Data SRAM不需要清零。
+       */
+      way.valid = false;
+      way.dirty = false;
+      way.tag = 0;
+    }
+
+    /*
+     * 恢复Replacement初始值：
+     * [Way0,Way1,Way2,Way3] = [0,1,2,3]
+     * 编码为0xE4。
+     */
+    set.lruRank = [0, 1, 2, 3];
+  }
+}
+
+function executeDwb() {
+  pause();
+
+  let dirtyLines = 0;
+
+  log(
+    "DWB开始：扫描64 Sets × 4 Ways。",
+    "meta"
+  );
+
+  for (let setIndex = 0; setIndex < SETS; setIndex++) {
+    for (let wayIndex = 0; wayIndex < WAYS; wayIndex++) {
+      const way = cache[setIndex].ways[wayIndex];
+
+      if (way.valid && way.dirty) {
+        dirtyLines++;
+
+        /*
+         * writeBack会读取8个Word并写入DDR，
+         * 然后将Dirty清零。
+         */
+        writeBack(setIndex, wayIndex);
+      }
+    }
+  }
+
+  setSignals(0, 0, -1);
+  render();
+
+  showResult(
+    `DWB完成：共写回${dirtyLines}条Dirty Line；` +
+    "Valid和Tag保留，Dirty清零。",
+    "info"
+  );
+
+  log(
+    `DWB完成：处理${dirtyLines}条Dirty Line。`,
+    "meta"
+  );
+}
+
+function executeDinv() {
+  pause();
+
+  let discardedDirtyLines = 0;
+  let validLines = 0;
+
+  for (let setIndex = 0; setIndex < SETS; setIndex++) {
+    for (let wayIndex = 0; wayIndex < WAYS; wayIndex++) {
+      const way = cache[setIndex].ways[wayIndex];
+
+      if (way.valid) {
+        validLines++;
+      }
+
+      if (way.valid && way.dirty) {
+        discardedDirtyLines++;
+      }
+    }
+  }
+
+  /*
+   * DInv不会先写回Dirty数据。
+   */
+  invalidateAllCache();
+
+  highlightedWay = -1;
+  setSignals(0, 0, -1);
+  render();
+
+  showResult(
+    `DInv完成：Invalidate ${validLines}条有效Line；` +
+    `直接丢弃${discardedDirtyLines}条Dirty Line；` +
+    "Replacement恢复0xE4。",
+    "info"
+  );
+
+  log(
+    `DInv：未执行Write-back，` +
+    `丢弃${discardedDirtyLines}条Dirty Line。`,
+    "meta"
+  );
+}
+
+function executeDwbInv() {
+  pause();
+
+  let dirtyLines = 0;
+  let validLines = 0;
+
+  log(
+    "DWBInv开始：先写回Dirty Line，再Invalidate。",
+    "meta"
+  );
+
+  for (let setIndex = 0; setIndex < SETS; setIndex++) {
+    for (let wayIndex = 0; wayIndex < WAYS; wayIndex++) {
+      const way = cache[setIndex].ways[wayIndex];
+
+      if (way.valid) {
+        validLines++;
+      }
+
+      if (way.valid && way.dirty) {
+        dirtyLines++;
+        writeBack(setIndex, wayIndex);
+      }
+    }
+  }
+
+  invalidateAllCache();
+
+  highlightedWay = -1;
+  setSignals(0, 0, -1);
+  render();
+
+  showResult(
+    `DWBInv完成：先写回${dirtyLines}条Dirty Line，` +
+    `再Invalidate ${validLines}条有效Line；` +
+    "Replacement恢复0xE4。",
+    "info"
+  );
+
+  log(
+    `DWBInv完成：Write-back ${dirtyLines}条，` +
+    `Invalidate ${validLines}条。`,
+    "meta"
+  );
+}
+
+    
+    function refill(decoded, wayIndex) {
+      const way = cache[decoded.set].ways[wayIndex];
+
+      way.valid = false;
+      way.dirty = false;
+      way.tag = decoded.tag;
+
+      log(
+        `DDR Refill ${hex(decoded.lineBase)} ～ ` +
+        `${hex(decoded.lineBase + 0x1F)}`,
+        "ddr"
+      );
+
+      for (let word = 0; word < WORDS; word++) {
+        way.data[word] = memoryRead(
+          decoded.lineBase + word * 4
+        );
+      }
+
+      way.valid = true;
+
+      log(
+        `安装到Set ${decoded.set} Way ${wayIndex}，Valid=1。`,
+        "meta"
+      );
+    }
+
+    function execute(request) {
+      const decoded = decode(request.address);
+      const operation = request.operation;
+      const data = request.data >>> 0;
+
+      const writePolicy = $("writePolicy").value;
+      const allocatePolicy = $("allocatePolicy").value;
+
+      currentSet = decoded.set;
+      currentWord = decoded.word;
+      highlightedWay = -1;
+
+      $("address").value = hex(request.address);
+      $("writeData").value = hex(data);
+      $("operation").value = operation;
+      $("displaySet").value = decoded.set;
+
+      updateDecode(decoded);
+
+      log(
+        `CPU ${operation.toUpperCase()} ${hex(request.address)}` +
+        (operation === "write" ? ` Data=${hex(data)}` : ""),
+        "normal"
+      );
+
+      const hitWay = findHit(decoded);
+
+      if (hitWay >= 0) {
+        const way = cache[decoded.set].ways[hitWay];
+
+        highlightedWay = hitWay;
+
+        if (operation === "read") {
+          setSignals(1, 0, -1);
+
+          showResult(
+            `READ HIT：Set ${decoded.set}，Way ${hitWay}，` +
+            `返回${hex(way.data[decoded.word])}。`,
+            "hit"
+          );
+
+          log(
+            `READ HIT Way ${hitWay}，True LRU更新。`,
+            "hit"
+          );
+        } else {
+          setSignals(1, 1, hitWay);
+          way.data[decoded.word] = data;
+
+          if (writePolicy === "wb") {
+            way.dirty = true;
+
+            showResult(
+              `WRITE HIT：更新Way ${hitWay}，Dirty置1。`,
+              "hit"
+            );
+          } else {
+            way.dirty = false;
+            memoryWrite(decoded.address, data);
+
+            showResult(
+              `WRITE HIT：更新Way ${hitWay}并Write-through到DDR。`,
+              "hit"
+            );
+          }
+
+          log(
+            `WRITE HIT Way ${hitWay}，WEM选择对应32-bit Slice。`,
+            "hit"
+          );
+        }
+
+        touchWay(decoded.set, hitWay);
+      } else {
+        log(
+          `CACHE MISS：Set ${decoded.set}中没有匹配Tag。`,
+          "miss"
+        );
+
+        if (
+          operation === "write" &&
+          allocatePolicy === "nwa"
+        ) {
+          setSignals(1, 0, -1);
+          memoryWrite(decoded.address, data);
+
+          showResult(
+            "WRITE MISS + Non-write-allocate：" +
+            "只写DDR，不分配D-Cache Way。",
+            "miss"
+          );
+        } else {
+          const victim = chooseVictim(decoded.set);
+          const victimWay =
+            cache[decoded.set].ways[victim];
+
+          highlightedWay = victim;
+
+          log(
+            `选择Way ${victim}：` +
+            `${victimWay.valid ? "LRU Victim" : "Invalid Way"}。`,
+            "meta"
+          );
+
+          if (victimWay.valid && victimWay.dirty) {
+            writeBack(decoded.set, victim);
+          }
+
+          refill(decoded, victim);
+
+          if (operation === "write") {
+            cache[decoded.set].ways[victim]
+              .data[decoded.word] = data;
+
+            if (writePolicy === "wb") {
+              cache[decoded.set].ways[victim].dirty = true;
+            } else {
+              memoryWrite(decoded.address, data);
+            }
+          }
+
+          setSignals(1, 1, victim);
+          touchWay(decoded.set, victim);
+
+          showResult(
+            `${operation.toUpperCase()} MISS：Refill到Way ${victim}，` +
+            "True LRU更新。",
+            "miss"
+          );
+        }
+      }
+
+      render();
+    }
+
+    function setSignals(me, we, wayIndex) {
+      $("meValue").textContent = me;
+      $("weValue").textContent = we;
+
+      $("sramOperation").textContent =
+        !me ? "Idle" : we ? "Write" : "Read";
+
+      const groups = [];
+
+      /*
+       * 显示顺序：Way3、Way2、Way1、Way0。
+       */
+      for (let way = 3; way >= 0; way--) {
+        groups.push(
+          me && we && way === wayIndex
+            ? "FFFFFFFF"
+            : "00000000"
+        );
+      }
+
+      $("wemValue").textContent = groups.join("_");
+    }
+
+function metadataValue(setIndex, wayIndex) {
+  const way = cache[setIndex].ways[wayIndex];
+
+  /*
+   * 每个Way Metadata为23 bit：
+   * [22]   Valid
+   * [21]   Dirty
+   * [20:0] Tag
+   *
+   * LRU不在这里，而是在Metadata[99:92]。
+   */
+  return (
+    ((way.valid ? 1 : 0) << 22) |
+    ((way.dirty ? 1 : 0) << 21) |
+    (way.tag & 0x1FFFFF)
+  ) >>> 0;
+}
+
+
+function metadataRange(way) {
+  const low = way * 23;
+  const high = low + 22;
+
+  return `[${high}:${low}]`;
+}
+
+function replacementValue(setIndex) {
+  const rank = cache[setIndex].lruRank;
+
+  /*
+   * Replacement[99:92]：
+   *
+   * bits [1:0] = Way0 Rank
+   * bits [3:2] = Way1 Rank
+   * bits [5:4] = Way2 Rank
+   * bits [7:6] = Way3 Rank
+   *
+   * 初始rank = [0,1,2,3]
+   * 编码结果 = 11_10_01_00 = 0xE4
+   */
+  return (
+    ((rank[3] & 0x3) << 6) |
+    ((rank[2] & 0x3) << 4) |
+    ((rank[1] & 0x3) << 2) |
+    (rank[0] & 0x3)
+  ) & 0xFF;
+}
+
+function replacementOrder(setIndex) {
+  return [0, 1, 2, 3]
+    .sort(
+      (a, b) =>
+        cache[setIndex].lruRank[a] -
+        cache[setIndex].lruRank[b]
+    )
+    .map(way => `Way${way}`)
+    .join(" → ");
+}
+
+function lruVictim(setIndex) {
+  const rank = cache[setIndex].lruRank;
+  return rank.findIndex(value => value === 3);
+}
+
+    function render() {
+      let setIndex =
+        Number.parseInt($("displaySet").value, 10);
+
+      if (!Number.isInteger(setIndex)) {
+        setIndex = 0;
+      }
+
+      setIndex = Math.max(0, Math.min(63, setIndex));
+      $("displaySet").value = setIndex;
+
+      $("replacementValue").textContent =
+  hex(replacementValue(setIndex), 2);
+
+$("replacementOrder").textContent =
+  replacementOrder(setIndex);
+
+const victim = lruVictim(setIndex);
+
+$("victimValue").textContent =
+  victim >= 0
+    ? `Way${victim}`
+    : "—";
+
+      const body = $("metadataBody");
+      body.innerHTML = "";
+
+      for (let way = 3; way >= 0; way--) {
+        const line = cache[setIndex].ways[way];
+        const row = document.createElement("tr");
+
+        if (
+          setIndex === currentSet &&
+          way === highlightedWay
+        ) {
+          row.className = "selected";
+        }
+
+ row.innerHTML = `
+  <td>Way ${way}</td>
+
+  <td>${metadataRange(way)}</td>
+
+  <td>
+    [${way * 32 + 31}:${way * 32}]
+  </td>
+
+  <td class="${line.valid ? "valid" : ""}">
+    ${line.valid ? 1 : 0}
+  </td>
+
+  <td class="${line.dirty ? "dirty" : ""}">
+    ${line.dirty ? 1 : 0}
+  </td>
+
+  <td>
+    ${line.valid ? hex(line.tag, 5) : "—"}
+  </td>
+
+  <td>
+    ${cache[setIndex].lruRank[way]}
+    ${
+      cache[setIndex].lruRank[way] === 0
+        ? "(MRU)"
+        : ""
+    }
+    ${
+      cache[setIndex].lruRank[way] === 3
+        ? "(LRU)"
+        : ""
+    }
+  </td>
+
+  <td>
+    ${hex(metadataValue(setIndex, way), 6)}
+  </td>
+`;
+
+
+        body.appendChild(row);
+      }
+
+      renderSramRow(setIndex);
+    }
+
+    function renderSramRow(setIndex) {
+      const container = $("sramRow");
+      container.innerHTML = "";
+
+      for (let way = 3; way >= 0; way--) {
+        const line = cache[setIndex].ways[way];
+        const low = way * 32;
+        const high = low + 31;
+
+        const div = document.createElement("div");
+
+        div.className =
+          "slice" +
+          (
+            setIndex === currentSet &&
+            way === highlightedWay
+              ? " active"
+              : ""
+          );
+
+        div.innerHTML = `
+          <strong>Way ${way}</strong>
+          <small>Data[${high}:${low}]</small>
+          <small>Word offset ${currentWord}</small>
+          <code>
+            ${line.valid
+              ? hex(line.data[currentWord])
+              : "Invalid"}
+          </code>
+        `;
+
+        container.appendChild(div);
+      }
+    }
+
+    function updateDecode(decoded) {
+      currentWord = decoded.word;
+
+      $("tagValue").textContent =
+        hex(decoded.tag, 5);
+
+      $("setValue").textContent =
+        `${decoded.set} (${hex(decoded.set, 2)})`;
+
+      $("wordValue").textContent =
+        decoded.word;
+
+      $("byteValue").textContent =
+        decoded.byte;
+
+      $("lineBase").textContent =
+        hex(decoded.lineBase);
+
+      $("adr0Value").textContent =
+        hex(decoded.adr0, 3);
+
+      $("adr1Value").textContent =
+        hex(decoded.adr1, 2);
+    }
+
+    function showResult(message, type) {
+      $("resultBox").textContent = message;
+      $("resultBox").className = `result ${type}`;
+    }
+
+    function log(message, type = "normal") {
+      const div = document.createElement("div");
+      div.className = `log-${type}`;
+      div.textContent = message;
+
+      $("eventLog").appendChild(div);
+      $("eventLog").scrollTop =
+        $("eventLog").scrollHeight;
+    }
+
+    function loadScenario() {
+      pause();
+
+      $("writePolicy").value = "wt";
+      $("allocatePolicy").value = "nwa";
+
+      const reads = [
+        0x60000000,
+        0x60000800,
+        0x60001800,
+        0x60002800,
+        0x60003800,
+        0x60004800,
+        0x60005800,
+        0x60006800
+      ];
+
+      const writes = [
+        0x60000000,
+        0x60000800,
+        0x60001800,
+        0x60002800,
+        0x60003804,
+        0x60004808,
+        0x6000580C,
+        0x60006810
+      ];
+
+      queue = [
+        ...reads.map(address => ({
+          operation: "read",
+          address,
+          data: 0
+        })),
+
+        ...writes.map(address => ({
+          operation: "write",
+          address,
+          data: 0x10
+        }))
+      ];
+
+      queueIndex = 0;
+      updateQueue();
+
+      showResult(
+        "已载入16笔KR4 Write-through + " +
+        "Non-write-allocate测试。",
+        "info"
+      );
+
+      log(
+        "载入KR4 WT+NWA测试场景。",
+        "meta"
+      );
+    }
+
+    function stepQueue() {
+      if (queueIndex >= queue.length) {
+        pause();
+        showResult("队列已经执行完成。", "info");
+        return;
+      }
+
+      execute(queue[queueIndex]);
+      queueIndex++;
+      updateQueue();
+    }
+
+    function updateQueue() {
+      $("queueText").textContent =
+        `队列：${queueIndex} / ${queue.length}`;
+    }
+
+    function play() {
+      if (timer !== null) {
+        return;
+      }
+
+      timer = window.setInterval(() => {
+        if (queueIndex >= queue.length) {
+          pause();
+          return;
+        }
+
+        stepQueue();
+      }, 800);
+    }
+
+    function pause() {
+      if (timer !== null) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    $("executeBtn").addEventListener("click", () => {
+      try {
+        execute({
+          operation: $("operation").value,
+          address: parseHex($("address").value),
+          data: parseHex($("writeData").value)
+        });
+      } catch (error) {
+        showResult(error.message, "miss");
+      }
+    });
+
+    $("scenarioBtn").addEventListener(
+      "click",
+      loadScenario
+    );
+
+    $("stepBtn").addEventListener(
+      "click",
+      stepQueue
+    );
+
+    $("playBtn").addEventListener(
+      "click",
+      play
+    );
+
+    $("pauseBtn").addEventListener(
+      "click",
+      pause
+    );
+
+    $("resetBtn").addEventListener(
+      "click",
+      resetCache
+    );
+
+    $("displaySet").addEventListener(
+      "input",
+      render
+    );
+
+    $("address").addEventListener("input", () => {
+      try {
+        updateDecode(
+          decode(parseHex($("address").value))
+        );
+        render();
+      } catch {
+        // 输入尚未完整时保持原显示。
+      }
+    });
+
+    $("dwbBtn").addEventListener(
+  "click",
+  executeDwb
+);
+
+$("dinvBtn").addEventListener(
+  "click",
+  executeDinv
+);
+
+$("dwbinvBtn").addEventListener(
+  "click",
+  executeDwbInv
+);
+
+    resetCache();
+  </script>
+</body>
+</html>
