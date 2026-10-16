@@ -1,0 +1,2496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>KR4 CPU D-Cache 动画演示</title>
+
+  <style>
+    :root {
+      --bg: #06111d;
+      --panel: #0d2238;
+      --panel2: #091a2b;
+      --border: #315574;
+      --text: #dcecff;
+      --muted: #8da8bf;
+      --blue: #68b7ff;
+      --green: #60d394;
+      --yellow: #ffd166;
+      --red: #ef6f6c;
+      --purple: #bb86fc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(
+          circle at 50% 0%,
+          rgba(26, 74, 112, 0.28),
+          transparent 42%
+        ),
+        var(--bg);
+      font-family:
+        Arial,
+        "Microsoft YaHei",
+        sans-serif;
+    }
+
+    code,
+    .mono {
+      font-family:
+        Consolas,
+        "Courier New",
+        monospace;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: 8px 14px;
+      border-bottom: 1px solid #294661;
+      background: rgba(5, 16, 28, 0.97);
+      backdrop-filter: blur(8px);
+    }
+
+    .header-main {
+      width: min(1880px, calc(100% - 8px));
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .header-title {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--blue);
+      font-size: 21px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .badge,
+    .header-link {
+      min-height: 29px;
+      padding: 5px 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #b9dcff;
+      font-size: 11px;
+      text-decoration: none;
+      white-space: nowrap;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #0a1e31;
+    }
+
+    .header-link:hover {
+      background: #17456d;
+    }
+
+    main {
+      width: min(1880px, calc(100% - 14px));
+      margin: 8px auto 18px;
+    }
+
+    .panel {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: rgba(13, 34, 56, 0.93);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: 15px;
+    }
+
+    .panel h3 {
+      margin: 9px 0 6px;
+      color: #b9dcff;
+      font-size: 13px;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(7, minmax(105px, 1fr));
+      gap: 6px;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    input,
+    select,
+    button {
+      min-height: 31px;
+      padding: 5px 8px;
+      color: var(--text);
+      font-size: 11px;
+      border: 1px solid #39709e;
+      border-radius: 6px;
+      background: #071827;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: bold;
+      background: #174a74;
+    }
+
+    button:hover {
+      filter: brightness(1.18);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .success-button {
+      color: #062014;
+      border-color: #54b87f;
+      background: var(--green);
+    }
+
+    .warning-button {
+      color: #261b00;
+      border-color: #c99c2b;
+      background: var(--yellow);
+    }
+
+    .danger-button {
+      border-color: #b95757;
+      background: #8a3838;
+    }
+
+    .status-bar {
+      min-height: 34px;
+      margin-top: 7px;
+      padding: 7px 9px;
+      display: flex;
+      align-items: center;
+      color: var(--yellow);
+      font-size: 11px;
+      border: 1px solid #315574;
+      border-radius: 6px;
+      background: #071827;
+    }
+
+    .progress-shell {
+      height: 7px;
+      margin-top: 7px;
+      overflow: hidden;
+      border: 1px solid #315574;
+      border-radius: 5px;
+      background: #06121e;
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      background:
+        linear-gradient(
+          90deg,
+          var(--green),
+          var(--blue)
+        );
+      transition: width 0.2s;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(8, minmax(80px, 1fr));
+      gap: 5px;
+    }
+
+    .stat {
+      min-height: 55px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #315574;
+      border-radius: 6px;
+      background: #071827;
+    }
+
+    .stat small,
+    .stat strong {
+      display: block;
+    }
+
+    .stat small {
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .stat strong {
+      color: var(--yellow);
+      font-family: Consolas, monospace;
+      font-size: 13px;
+    }
+
+    /* 数据路径 */
+
+    .data-path {
+      min-height: 180px;
+      padding: 15px 8px;
+      display: grid;
+      grid-template-columns:
+        minmax(110px, 1fr)
+        40px
+        minmax(120px, 1fr)
+        40px
+        minmax(140px, 1.15fr)
+        40px
+        minmax(140px, 1.15fr)
+        40px
+        minmax(130px, 1fr);
+      align-items: center;
+      gap: 4px;
+    }
+
+    .path-node {
+      min-height: 105px;
+      padding: 10px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border: 2px solid #315574;
+      border-radius: 10px;
+      background: #071827;
+      transition:
+        transform 0.2s,
+        box-shadow 0.2s,
+        border-color 0.2s,
+        background 0.2s;
+    }
+
+    .path-node strong {
+      margin-bottom: 7px;
+      color: #b9dcff;
+      font-size: 14px;
+    }
+
+    .path-node span {
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .path-node.active {
+      transform: translateY(-3px);
+      border-color: var(--yellow);
+      background: #4e4018;
+      box-shadow:
+        0 0 18px rgba(255, 209, 102, 0.42);
+    }
+
+    .path-node.hit {
+      border-color: var(--green);
+      background: #164a33;
+      box-shadow:
+        0 0 18px rgba(96, 211, 148, 0.42);
+    }
+
+    .path-node.miss {
+      border-color: var(--red);
+      background: #572828;
+      box-shadow:
+        0 0 18px rgba(239, 111, 108, 0.42);
+    }
+
+    .path-node.writeback {
+      border-color: var(--purple);
+      background: #372451;
+      box-shadow:
+        0 0 18px rgba(187, 134, 252, 0.42);
+    }
+
+    .path-arrow {
+      color: #496982;
+      text-align: center;
+      font-size: 25px;
+      font-weight: bold;
+      transition:
+        color 0.2s,
+        text-shadow 0.2s;
+    }
+
+    .path-arrow.active {
+      color: var(--yellow);
+      text-shadow:
+        0 0 12px rgba(255, 209, 102, 0.8);
+    }
+
+    .decode-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+
+    .decode-item {
+      min-height: 52px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #315574;
+      border-radius: 6px;
+      background: #071827;
+    }
+
+    .decode-item small,
+    .decode-item strong {
+      display: block;
+    }
+
+    .decode-item small {
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .decode-item strong {
+      color: #a9d9ff;
+      font-family: Consolas, monospace;
+      font-size: 10px;
+    }
+
+    /* Cache */
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid #315574;
+      border-radius: 7px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 1100px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 10px;
+    }
+
+    th,
+    td {
+      padding: 5px 4px;
+      text-align: center;
+      border: 1px solid #294661;
+    }
+
+    th {
+      color: #b9dcff;
+      background: #123452;
+    }
+
+    td {
+      background: #091a2b;
+    }
+
+    tr.invalid-row td {
+      color: #6f8295;
+    }
+
+    tr.dirty-row td {
+      background: rgba(97, 77, 25, 0.58);
+    }
+
+    tr.active-row td {
+      border-top-color: var(--yellow);
+      border-bottom-color: var(--yellow);
+    }
+
+    td.active-word {
+      background: #5d4a18 !important;
+      box-shadow:
+        inset 0 0 0 1px var(--yellow);
+    }
+
+    td.hit-word {
+      background: #18543a !important;
+      box-shadow:
+        inset 0 0 0 1px var(--green);
+    }
+
+    .word-address,
+    .word-value {
+      display: block;
+      white-space: nowrap;
+      font-family: Consolas, monospace;
+    }
+
+    .word-address {
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .word-value {
+      margin-top: 2px;
+      color: #a9d9ff;
+      font-size: 9px;
+    }
+
+    /* Memory */
+
+    .memory-grid,
+    .recent-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(8, minmax(90px, 1fr));
+      gap: 4px;
+    }
+
+    .memory-word,
+    .recent-word {
+      min-height: 66px;
+      padding: 5px 3px;
+      overflow: hidden;
+      text-align: center;
+      border: 1px solid #315574;
+      border-radius: 6px;
+      background: #071827;
+    }
+
+    .memory-word small,
+    .memory-word strong,
+    .memory-word code,
+    .recent-word small,
+    .recent-word strong,
+    .recent-word code,
+    .recent-word span {
+      display: block;
+      margin: 2px 0;
+    }
+
+    .memory-word small,
+    .recent-word small {
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .memory-word strong,
+    .memory-word code,
+    .recent-word strong,
+    .recent-word code {
+      font-family: Consolas, monospace;
+      font-size: 9px;
+    }
+
+    .memory-word strong,
+    .recent-word strong {
+      color: #91cfff;
+    }
+
+    .memory-word code,
+    .recent-word code {
+      color: #d4e8ff;
+    }
+
+    .recent-word span {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 8px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .recent-word.read {
+      border-color: #3c9167;
+      background: rgba(20, 67, 49, 0.75);
+    }
+
+    .recent-word.write {
+      border-color: #c69a2e;
+      background: rgba(89, 71, 25, 0.78);
+    }
+
+    .event-log {
+      height: 224px;
+      padding: 7px;
+      overflow: auto;
+      color: #b9dcff;
+      font-family: Consolas, monospace;
+      font-size: 10px;
+      line-height: 1.55;
+      border: 1px solid #315574;
+      border-radius: 6px;
+      background: #06131f;
+    }
+
+    .log-hit {
+      color: var(--green);
+    }
+
+    .log-miss {
+      color: var(--red);
+    }
+
+    .log-write {
+      color: var(--yellow);
+    }
+
+    .log-info {
+      color: #8ecbff;
+    }
+
+    footer {
+      padding: 9px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 9px;
+    }
+
+    @media (max-width: 1350px) {
+      .control-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .stat-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .data-path {
+        grid-template-columns: 1fr;
+      }
+
+      .path-arrow {
+        transform: rotate(90deg);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .header-main {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .grid2 {
+        grid-template-columns: 1fr;
+      }
+
+      .control-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .decode-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .memory-grid,
+      .recent-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="header-main">
+      <div class="header-title">
+        <h1>KR4 CPU D-Cache 动画演示</h1>
+
+        <span class="subtitle">
+          8 KB · 64 Sets · 4 Ways · 32-byte Line · True LRU
+        </span>
+      </div>
+
+      <div class="header-actions">
+        <span class="badge">
+          V0.1 · Owner: Jun Huang
+        </span>
+
+        <a class="header-link" href="./index.html">
+          返回首页
+        </a>
+
+        <a class="header-link" href="./dcache.html">
+          打开完整调试器
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" style="margin-bottom:8px;">
+      <h2>1. 程序访问范围与运行控制</h2>
+
+      <div class="control-grid">
+        <label>
+          起始地址
+          <input
+            id="startAddress"
+            value="0x60000000"
+          >
+        </label>
+
+        <label>
+          终止地址
+          <input
+            id="endAddress"
+            value="0x6000007C"
+          >
+        </label>
+
+        <label>
+          地址步进
+          <select id="addressStep">
+            <option value="4">4 Bytes</option>
+            <option value="8">8 Bytes</option>
+            <option value="16">16 Bytes</option>
+            <option value="32">32 Bytes</option>
+            <option value="64">64 Bytes</option>
+          </select>
+        </label>
+
+        <label>
+          访问模式
+          <select id="accessMode">
+            <option value="read">连续 Read</option>
+            <option value="write">连续 Write</option>
+            <option value="mixed" selected>
+              Read / Write交替
+            </option>
+          </select>
+        </label>
+
+        <label>
+          Write Data起始值
+          <input
+            id="writeDataBase"
+            value="0x12340000"
+          >
+        </label>
+
+        <label>
+          Write Hit策略
+          <select id="writeHitPolicy">
+            <option value="wb" selected>
+              Write Back
+            </option>
+            <option value="wt">
+              Write Through
+            </option>
+          </select>
+        </label>
+
+        <label>
+          Write Miss策略
+          <select id="writeMissPolicy">
+            <option value="wa" selected>
+              Write Allocate
+            </option>
+            <option value="nwa">
+              Non-write-allocate
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <div class="button-row">
+        <button
+          id="startButton"
+          class="success-button"
+        >
+          开始运行
+        </button>
+
+        <button id="pauseButton">
+          暂停
+        </button>
+
+        <button id="continueButton">
+          继续
+        </button>
+
+        <button
+          id="stepButton"
+          class="warning-button"
+        >
+          单步动画
+        </button>
+
+        <button
+          id="restartButton"
+          class="danger-button"
+        >
+          重新开始
+        </button>
+
+        <label style="min-width:145px;">
+          动画速度
+          <select id="speed">
+            <option value="1200">慢速 1.2秒</option>
+            <option value="650" selected>
+              正常 0.65秒
+            </option>
+            <option value="280">快速 0.28秒</option>
+            <option value="100">极速 0.10秒</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="runStatus" class="status-bar">
+        等待开始运行。
+      </div>
+
+      <div class="progress-shell">
+        <div id="progressBar" class="progress-bar"></div>
+      </div>
+    </section>
+
+    <section class="grid2">
+      <div class="panel">
+        <h2>2. 当前CPU请求与地址分解</h2>
+
+        <div class="decode-grid">
+          <div class="decode-item">
+            <small>操作</small>
+            <strong id="decodeOperation">—</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Address</small>
+            <strong id="decodeAddress">0x00000000</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Tag [31:11]</small>
+            <strong id="decodeTag">0x00000</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Set [10:5]</small>
+            <strong id="decodeSet">0</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Word [4:2]</small>
+            <strong id="decodeWord">0</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Byte [1:0]</small>
+            <strong id="decodeByte">0</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Write Data</small>
+            <strong id="decodeWriteData">—</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>3. 运行统计</h2>
+
+        <div class="stat-grid">
+          <div class="stat">
+            <small>CPU访问</small>
+            <strong id="statAccess">0</strong>
+          </div>
+
+          <div class="stat">
+            <small>Cache Hit</small>
+            <strong id="statHit">0</strong>
+          </div>
+
+          <div class="stat">
+            <small>Cache Miss</small>
+            <strong id="statMiss">0</strong>
+          </div>
+
+          <div class="stat">
+            <small>Hit Rate</small>
+            <strong id="statHitRate">0.00%</strong>
+          </div>
+
+          <div class="stat">
+            <small>DDR Read</small>
+            <strong id="statDdrRead">0</strong>
+          </div>
+
+          <div class="stat">
+            <small>DDR Write</small>
+            <strong id="statDdrWrite">0</strong>
+          </div>
+
+          <div class="stat">
+            <small>Write-back Line</small>
+            <strong id="statWriteback">0</strong>
+          </div>
+
+          <div class="stat">
+            <small>当前请求</small>
+            <strong id="statProgress">0 / 0</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-bottom:8px;">
+      <h2>4. CPU → D-Cache → DDR 动态数据路径</h2>
+
+      <div class="data-path">
+        <div id="nodeCpu" class="path-node">
+          <strong>CPU</strong>
+          <span id="nodeCpuText">
+            等待请求
+          </span>
+        </div>
+
+        <div id="arrow1" class="path-arrow">→</div>
+
+        <div id="nodeDecode" class="path-node">
+          <strong>Address Decode</strong>
+          <span id="nodeDecodeText">
+            Tag / Set / Word
+          </span>
+        </div>
+
+        <div id="arrow2" class="path-arrow">→</div>
+
+        <div id="nodeCache" class="path-node">
+          <strong>4-Way D-Cache</strong>
+          <span id="nodeCacheText">
+            等待Tag比较
+          </span>
+        </div>
+
+        <div id="arrow3" class="path-arrow">↔</div>
+
+        <div id="nodeFill" class="path-node">
+          <strong>Line Fill Buffer</strong>
+          <span id="nodeFillText">
+            8 × 32-bit
+          </span>
+        </div>
+
+        <div id="arrow4" class="path-arrow">↔</div>
+
+        <div id="nodeDdr" class="path-node">
+          <strong>DDR Memory</strong>
+          <span id="nodeDdrText">
+            Sparse Zero Memory
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-bottom:8px;">
+      <h2>
+        5. 当前Set完整Cache数据
+        <span id="currentSetLabel" class="badge">
+          Set 0
+        </span>
+      </h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Way</th>
+              <th>V</th>
+              <th>D</th>
+              <th>Tag</th>
+              <th>Rank</th>
+              <th>Word 0</th>
+              <th>Word 1</th>
+              <th>Word 2</th>
+              <th>Word 3</th>
+              <th>Word 4</th>
+              <th>Word 5</th>
+              <th>Word 6</th>
+              <th>Word 7</th>
+            </tr>
+          </thead>
+
+          <tbody id="cacheBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid2">
+      <div class="panel">
+        <h2>6. 当前32-byte Memory Line</h2>
+
+        <div id="memoryLine" class="memory-grid"></div>
+
+        <h3>最近8笔DDR Word事务</h3>
+
+        <div id="recentMemory" class="recent-grid"></div>
+      </div>
+
+      <div class="panel">
+        <h2>7. 动画事务日志</h2>
+
+        <div id="eventLog" class="event-log"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    KR4 CPU Cache Memory Animation Demo ·
+    32-bit RISC-V · 8 KB D-Cache · True LRU
+  </footer>
+
+  <script>
+    "use strict";
+
+    const SETS = 64;
+    const WAYS = 4;
+    const WORDS = 8;
+    const LINE_BYTES = 32;
+
+    const $ = (id) =>
+      document.getElementById(id);
+
+    function hex(
+      value,
+      digits = 8
+    ) {
+      return (
+        "0x" +
+        (value >>> 0)
+          .toString(16)
+          .toUpperCase()
+          .padStart(digits, "0")
+      );
+    }
+
+    function parseNumber(
+      text,
+      name
+    ) {
+      const value =
+        Number(text);
+
+      if (
+        !Number.isFinite(value) ||
+        value < 0 ||
+        value > 0xFFFFFFFF
+      ) {
+        throw new Error(
+          `${name}不是有效的32-bit数值。`
+        );
+      }
+
+      return value >>> 0;
+    }
+
+    function decodeAddress(
+      address
+    ) {
+      return {
+        address: address >>> 0,
+        tag: address >>> 11,
+        set: (address >>> 5) & 0x3F,
+        word: (address >>> 2) & 0x7,
+        byte: address & 0x3,
+        lineBase:
+          (address & 0xFFFFFFE0) >>> 0
+      };
+    }
+
+    function lineBaseFromTag(
+      tag,
+      setIndex
+    ) {
+      return (
+        (
+          (tag * 2048) +
+          ((setIndex & 0x3F) * 32)
+        ) >>> 0
+      );
+    }
+
+    function createWay() {
+      return {
+        valid: false,
+        dirty: false,
+        tag: 0,
+        data: new Array(WORDS).fill(0)
+      };
+    }
+
+    function createCache() {
+      return Array.from(
+        { length: SETS },
+        () => ({
+          ways: Array.from(
+            { length: WAYS },
+            createWay
+          ),
+
+          /*
+           * Rank 0 = MRU
+           * Rank 3 = LRU
+           * 初始顺序与调试页面一致：
+           * Way3 → Way0 → Way1 → Way2
+           */
+          ranks: [1, 2, 3, 0]
+        })
+      );
+    }
+
+    let cache;
+    let memory;
+    let memoryEvents;
+    let operations;
+    let operationIndex;
+    let currentOperation;
+    let currentDecode;
+    let currentResult;
+
+    let phasePlan;
+    let phaseIndex;
+
+    let running;
+    let paused;
+    let timer;
+
+    let highlightedWay;
+    let memoryViewBase;
+    let eventSequence;
+
+    let stats;
+
+    function resetModel() {
+      clearTimeout(timer);
+
+      cache = createCache();
+      memory = new Map();
+      memoryEvents = [];
+      operations = [];
+
+      operationIndex = 0;
+      currentOperation = null;
+      currentDecode = decodeAddress(0);
+      currentResult = null;
+
+      phasePlan = [];
+      phaseIndex = 0;
+
+      running = false;
+      paused = false;
+      timer = null;
+
+      highlightedWay = -1;
+      memoryViewBase = 0x60000000;
+      eventSequence = 0;
+
+      stats = {
+        access: 0,
+        hit: 0,
+        miss: 0,
+        ddrRead: 0,
+        ddrWrite: 0,
+        writeback: 0
+      };
+
+      $("eventLog").innerHTML = "";
+
+      clearPath();
+      renderAll();
+
+      $("runStatus").textContent =
+        "等待开始运行。";
+    }
+
+    function peekMemory(
+      address
+    ) {
+      const aligned =
+        (address & 0xFFFFFFFC) >>> 0;
+
+      return memory.has(aligned)
+        ? memory.get(aligned) >>> 0
+        : 0;
+    }
+
+    function recordMemoryEvent(
+      operation,
+      address,
+      oldValue,
+      value,
+      source,
+      beat,
+      last
+    ) {
+      eventSequence++;
+
+      memoryEvents.push({
+        id: eventSequence,
+        operation,
+        address: address >>> 0,
+        oldValue: oldValue >>> 0,
+        value: value >>> 0,
+        source,
+        beat,
+        last
+      });
+
+      if (memoryEvents.length > 512) {
+        memoryEvents.shift();
+      }
+    }
+
+    function memoryRead(
+      address,
+      source,
+      beat = 0,
+      last = false
+    ) {
+      const value =
+        peekMemory(address);
+
+      stats.ddrRead++;
+
+      recordMemoryEvent(
+        "READ",
+        address,
+        value,
+        value,
+        source,
+        beat,
+        last
+      );
+
+      return value;
+    }
+
+    function memoryWrite(
+      address,
+      value,
+      source,
+      beat = 0,
+      last = false
+    ) {
+      const aligned =
+        (address & 0xFFFFFFFC) >>> 0;
+
+      const oldValue =
+        peekMemory(aligned);
+
+      memory.set(
+        aligned,
+        value >>> 0
+      );
+
+      stats.ddrWrite++;
+
+      recordMemoryEvent(
+        "WRITE",
+        aligned,
+        oldValue,
+        value,
+        source,
+        beat,
+        last
+      );
+    }
+
+    function touchWay(
+      setIndex,
+      wayIndex
+    ) {
+      const ranks =
+        cache[setIndex].ranks;
+
+      const oldRank =
+        ranks[wayIndex];
+
+      for (
+        let index = 0;
+        index < WAYS;
+        index++
+      ) {
+        if (
+          index !== wayIndex &&
+          ranks[index] < oldRank
+        ) {
+          ranks[index]++;
+        }
+      }
+
+      ranks[wayIndex] = 0;
+    }
+
+    function findHitWay(
+      setIndex,
+      tag
+    ) {
+      for (
+        let wayIndex = 0;
+        wayIndex < WAYS;
+        wayIndex++
+      ) {
+        const way =
+          cache[setIndex].ways[wayIndex];
+
+        if (
+          way.valid &&
+          way.tag === tag
+        ) {
+          return wayIndex;
+        }
+      }
+
+      return -1;
+    }
+
+    function chooseVictim(
+      setIndex
+    ) {
+      /*
+       * 优先选择Invalid Way。
+       * 从Way3向Way0寻找，与调试页面首次安装Way3一致。
+       */
+      for (
+        let wayIndex = WAYS - 1;
+        wayIndex >= 0;
+        wayIndex--
+      ) {
+        if (
+          !cache[setIndex]
+            .ways[wayIndex]
+            .valid
+        ) {
+          return wayIndex;
+        }
+      }
+
+      const ranks =
+        cache[setIndex].ranks;
+
+      return ranks.indexOf(3);
+    }
+
+    function writebackWay(
+      setIndex,
+      wayIndex
+    ) {
+      const way =
+        cache[setIndex].ways[wayIndex];
+
+      if (
+        !way.valid ||
+        !way.dirty
+      ) {
+        return false;
+      }
+
+      const base =
+        lineBaseFromTag(
+          way.tag,
+          setIndex
+        );
+
+      for (
+        let wordIndex = 0;
+        wordIndex < WORDS;
+        wordIndex++
+      ) {
+        memoryWrite(
+          base + wordIndex * 4,
+          way.data[wordIndex],
+          "D-Cache Write-back",
+          wordIndex,
+          wordIndex === WORDS - 1
+        );
+      }
+
+      way.dirty = false;
+      stats.writeback++;
+
+      addLog(
+        `WRITE-BACK Set ${setIndex}, ` +
+        `Way ${wayIndex}, Base ${hex(base)}`,
+        "write"
+      );
+
+      return true;
+    }
+
+    function refillWay(
+      decoded,
+      wayIndex
+    ) {
+      const way =
+        cache[decoded.set].ways[wayIndex];
+
+      for (
+        let wordIndex = 0;
+        wordIndex < WORDS;
+        wordIndex++
+      ) {
+        way.data[wordIndex] =
+          memoryRead(
+            decoded.lineBase +
+              wordIndex * 4,
+            "D-Cache Refill",
+            wordIndex,
+            wordIndex === WORDS - 1
+          );
+      }
+
+      way.valid = true;
+      way.dirty = false;
+      way.tag = decoded.tag;
+    }
+
+    function buildOperations() {
+      const start =
+        parseNumber(
+          $("startAddress").value.trim(),
+          "起始地址"
+        );
+
+      const end =
+        parseNumber(
+          $("endAddress").value.trim(),
+          "终止地址"
+        );
+
+      const step =
+        Number($("addressStep").value);
+
+      const mode =
+        $("accessMode").value;
+
+      const writeBase =
+        parseNumber(
+          $("writeDataBase").value.trim(),
+          "Write Data起始值"
+        );
+
+      if ((start & 0x3) !== 0) {
+        throw new Error(
+          "起始地址必须4-byte对齐。"
+        );
+      }
+
+      if ((end & 0x3) !== 0) {
+        throw new Error(
+          "终止地址必须4-byte对齐。"
+        );
+      }
+
+      if (end < start) {
+        throw new Error(
+          "终止地址不能小于起始地址。"
+        );
+      }
+
+      const count =
+        Math.floor(
+          (end - start) / step
+        ) + 1;
+
+      if (count > 4096) {
+        throw new Error(
+          "一次最多生成4096个CPU请求。"
+        );
+      }
+
+      const list = [];
+
+      for (
+        let index = 0;
+        index < count;
+        index++
+      ) {
+        const address =
+          (start + index * step) >>> 0;
+
+        let type;
+
+        if (mode === "mixed") {
+          type =
+            index % 2 === 0
+              ? "READ"
+              : "WRITE";
+        } else {
+          type =
+            mode === "read"
+              ? "READ"
+              : "WRITE";
+        }
+
+        list.push({
+          type,
+          address,
+          data:
+            (writeBase + index) >>> 0
+        });
+      }
+
+      return list;
+    }
+
+    function makePhase(
+      node,
+      style,
+      message
+    ) {
+      return {
+        node,
+        style,
+        message
+      };
+    }
+
+    function executeOperation(
+      operation
+    ) {
+      const decoded =
+        decodeAddress(operation.address);
+
+      currentDecode = decoded;
+      memoryViewBase = decoded.lineBase;
+
+      stats.access++;
+
+      const phases = [
+        makePhase(
+          "cpu",
+          "active",
+          `CPU发出${operation.type}请求`
+        ),
+
+        makePhase(
+          "decode",
+          "active",
+          `地址分解：Set ${decoded.set}, ` +
+          `Word ${decoded.word}`
+        )
+      ];
+
+      let hitWay =
+        findHitWay(
+          decoded.set,
+          decoded.tag
+        );
+
+      if (hitWay >= 0) {
+        stats.hit++;
+        highlightedWay = hitWay;
+
+        phases.push(
+          makePhase(
+            "cache",
+            "hit",
+            `Cache HIT：Way ${hitWay}`
+          )
+        );
+
+        const way =
+          cache[decoded.set].ways[hitWay];
+
+        let returnValue = null;
+
+        if (operation.type === "READ") {
+          returnValue =
+            way.data[decoded.word] >>> 0;
+
+          addLog(
+            `READ HIT ${hex(operation.address)} ` +
+            `→ ${hex(returnValue)}, ` +
+            `Set ${decoded.set}, Way ${hitWay}`,
+            "hit"
+          );
+        } else {
+          way.data[decoded.word] =
+            operation.data >>> 0;
+
+          if (
+            $("writeHitPolicy").value === "wb"
+          ) {
+            way.dirty = true;
+
+            addLog(
+              `WRITE HIT ${hex(operation.address)} ` +
+              `← ${hex(operation.data)}, ` +
+              `Way ${hitWay}, Dirty=1`,
+              "hit"
+            );
+          } else {
+            way.dirty = false;
+
+            memoryWrite(
+              operation.address,
+              operation.data,
+              "CPU Write-through",
+              0,
+              true
+            );
+
+            phases.push(
+              makePhase(
+                "ddr",
+                "active",
+                "Write-through写入DDR"
+              )
+            );
+
+            addLog(
+              `WRITE-THROUGH ${hex(operation.address)} ` +
+              `← ${hex(operation.data)}`,
+              "write"
+            );
+          }
+        }
+
+        touchWay(
+          decoded.set,
+          hitWay
+        );
+
+        phases.push(
+          makePhase(
+            "done",
+            "hit",
+            "请求完成"
+          )
+        );
+
+        return {
+          hit: true,
+          hitWay,
+          victimWay: -1,
+          value: returnValue,
+          phases
+        };
+      }
+
+      stats.miss++;
+
+      phases.push(
+        makePhase(
+          "cache",
+          "miss",
+          "Cache MISS"
+        )
+      );
+
+      /*
+       * Non-write-allocate：
+       * Write Miss直接写DDR，不安装Cache Line。
+       */
+      if (
+        operation.type === "WRITE" &&
+        $("writeMissPolicy").value === "nwa"
+      ) {
+        highlightedWay = -1;
+
+        memoryWrite(
+          operation.address,
+          operation.data,
+          "CPU Non-write-allocate",
+          0,
+          true
+        );
+
+        phases.push(
+          makePhase(
+            "ddr",
+            "active",
+            "NWA：直接写入DDR"
+          )
+        );
+
+        phases.push(
+          makePhase(
+            "done",
+            "active",
+            "Write Miss完成，Cache不分配"
+          )
+        );
+
+        addLog(
+          `WRITE MISS NWA ${hex(operation.address)} ` +
+          `← ${hex(operation.data)}`,
+          "miss"
+        );
+
+        return {
+          hit: false,
+          hitWay: -1,
+          victimWay: -1,
+          value: null,
+          phases
+        };
+      }
+
+      const victimWay =
+        chooseVictim(decoded.set);
+
+      const victim =
+        cache[decoded.set].ways[victimWay];
+
+      highlightedWay = victimWay;
+
+      if (
+        victim.valid &&
+        victim.dirty
+      ) {
+        phases.push(
+          makePhase(
+            "cache",
+            "writeback",
+            `Dirty Victim：Way ${victimWay}`
+          )
+        );
+
+        phases.push(
+          makePhase(
+            "ddr",
+            "writeback",
+            "8-Word Write-back"
+          )
+        );
+
+        writebackWay(
+          decoded.set,
+          victimWay
+        );
+      }
+
+      phases.push(
+        makePhase(
+          "ddr",
+          "active",
+          "DDR读取8个Word"
+        )
+      );
+
+      phases.push(
+        makePhase(
+          "fill",
+          "active",
+          "Line Fill Buffer接收数据"
+        )
+      );
+
+      refillWay(
+        decoded,
+        victimWay
+      );
+
+      const installedWay =
+        cache[decoded.set].ways[victimWay];
+
+      let returnValue = null;
+
+      if (operation.type === "READ") {
+        returnValue =
+          installedWay.data[decoded.word] >>> 0;
+
+        addLog(
+          `READ MISS ${hex(operation.address)}, ` +
+          `Refill → Set ${decoded.set}, ` +
+          `Way ${victimWay}, ` +
+          `Data=${hex(returnValue)}`,
+          "miss"
+        );
+      } else {
+        installedWay.data[decoded.word] =
+          operation.data >>> 0;
+
+        if (
+          $("writeHitPolicy").value === "wb"
+        ) {
+          installedWay.dirty = true;
+        } else {
+          installedWay.dirty = false;
+
+          memoryWrite(
+            operation.address,
+            operation.data,
+            "CPU Write-through",
+            0,
+            true
+          );
+
+          phases.push(
+            makePhase(
+              "ddr",
+              "active",
+              "Refill后Write-through写DDR"
+            )
+          );
+        }
+
+        addLog(
+          `WRITE MISS WA ${hex(operation.address)} ` +
+          `← ${hex(operation.data)}, ` +
+          `Refill → Way ${victimWay}`,
+          "miss"
+        );
+      }
+
+      touchWay(
+        decoded.set,
+        victimWay
+      );
+
+      phases.push(
+        makePhase(
+          "cache",
+          "hit",
+          `Line安装至Way ${victimWay}`
+        )
+      );
+
+      phases.push(
+        makePhase(
+          "done",
+          "hit",
+          "请求完成"
+        )
+      );
+
+      return {
+        hit: false,
+        hitWay: victimWay,
+        victimWay,
+        value: returnValue,
+        phases
+      };
+    }
+
+    function addLog(
+      message,
+      type = "info"
+    ) {
+      const line =
+        document.createElement("div");
+
+      line.className =
+        `log-${type}`;
+
+      line.textContent =
+        `[${String(stats.access).padStart(4, "0")}] ` +
+        message;
+
+      $("eventLog").prepend(line);
+    }
+
+    function clearPath() {
+      [
+        "nodeCpu",
+        "nodeDecode",
+        "nodeCache",
+        "nodeFill",
+        "nodeDdr"
+      ].forEach((id) => {
+        $(id).classList.remove(
+          "active",
+          "hit",
+          "miss",
+          "writeback"
+        );
+      });
+
+      [
+        "arrow1",
+        "arrow2",
+        "arrow3",
+        "arrow4"
+      ].forEach((id) => {
+        $(id).classList.remove("active");
+      });
+    }
+
+    function activateArrow(
+      count
+    ) {
+      for (
+        let index = 1;
+        index <= count;
+        index++
+      ) {
+        $(`arrow${index}`)
+          .classList.add("active");
+      }
+    }
+
+    function applyPhase(
+      phase
+    ) {
+      clearPath();
+
+      let target = null;
+
+      if (phase.node === "cpu") {
+        target = $("nodeCpu");
+      } else if (
+        phase.node === "decode"
+      ) {
+        target = $("nodeDecode");
+        activateArrow(1);
+      } else if (
+        phase.node === "cache"
+      ) {
+        target = $("nodeCache");
+        activateArrow(2);
+      } else if (
+        phase.node === "fill"
+      ) {
+        target = $("nodeFill");
+        activateArrow(3);
+      } else if (
+        phase.node === "ddr"
+      ) {
+        target = $("nodeDdr");
+        activateArrow(4);
+      } else if (
+        phase.node === "done"
+      ) {
+        target = $("nodeCpu");
+        activateArrow(2);
+      }
+
+      if (target) {
+        target.classList.add(
+          phase.style || "active"
+        );
+      }
+
+      $("runStatus").textContent =
+        phase.message;
+
+      updateNodeText();
+      renderAll();
+    }
+
+    function updateNodeText() {
+      if (!currentOperation) {
+        $("nodeCpuText").textContent =
+          "等待请求";
+
+        $("nodeDecodeText").textContent =
+          "Tag / Set / Word";
+
+        $("nodeCacheText").textContent =
+          "等待Tag比较";
+
+        $("nodeFillText").textContent =
+          "8 × 32-bit";
+
+        $("nodeDdrText").textContent =
+          "Sparse Zero Memory";
+
+        return;
+      }
+
+      $("nodeCpuText").textContent =
+        `${currentOperation.type} ` +
+        `${hex(currentOperation.address)}`;
+
+      $("nodeDecodeText").textContent =
+        `Tag ${hex(currentDecode.tag, 5)} · ` +
+        `Set ${currentDecode.set} · ` +
+        `Word ${currentDecode.word}`;
+
+      if (currentResult) {
+        $("nodeCacheText").textContent =
+          currentResult.hit
+            ? `HIT · Way ${currentResult.hitWay}`
+            : (
+              currentResult.hitWay >= 0
+                ? `MISS · Install Way ${currentResult.hitWay}`
+                : "MISS · No Allocate"
+            );
+      }
+
+      $("nodeFillText").textContent =
+        currentResult &&
+        !currentResult.hit &&
+        currentResult.hitWay >= 0
+          ? "Refill 8 Words"
+          : "Buffer Idle";
+
+      $("nodeDdrText").textContent =
+        `Read ${stats.ddrRead} · ` +
+        `Write ${stats.ddrWrite}`;
+    }
+
+    function scheduleNext() {
+      clearTimeout(timer);
+
+      if (
+        !running ||
+        paused
+      ) {
+        return;
+      }
+
+      timer = setTimeout(
+        () => advanceAnimation(true),
+        Number($("speed").value)
+      );
+    }
+
+    function advanceAnimation(
+      automatic
+    ) {
+      if (
+        operations.length === 0
+      ) {
+        try {
+          operations =
+            buildOperations();
+        } catch (error) {
+          $("runStatus").textContent =
+            `错误：${error.message}`;
+          return;
+        }
+      }
+
+      /*
+       * 当前请求的动画阶段已全部完成，
+       * 取下一条CPU请求。
+       */
+      if (
+        phasePlan.length === 0 ||
+        phaseIndex >= phasePlan.length
+      ) {
+        if (
+          operationIndex >= operations.length
+        ) {
+          running = false;
+          paused = false;
+
+          clearPath();
+
+          $("runStatus").textContent =
+            `运行完成：共${operations.length}个CPU请求，` +
+            `Hit Rate ${getHitRate()}。`;
+
+          renderAll();
+          return;
+        }
+
+        currentOperation =
+          operations[operationIndex];
+
+        operationIndex++;
+
+        currentResult =
+          executeOperation(
+            currentOperation
+          );
+
+        phasePlan =
+          currentResult.phases;
+
+        phaseIndex = 0;
+      }
+
+      const phase =
+        phasePlan[phaseIndex];
+
+      phaseIndex++;
+
+      applyPhase(phase);
+
+      if (automatic) {
+        scheduleNext();
+      }
+    }
+
+    function getHitRate() {
+      if (stats.access === 0) {
+        return "0.00%";
+      }
+
+      return (
+        (
+          stats.hit /
+          stats.access *
+          100
+        ).toFixed(2) + "%"
+      );
+    }
+
+    function startRun() {
+      try {
+        resetModel();
+
+        operations =
+          buildOperations();
+
+        running = true;
+        paused = false;
+
+        addLog(
+          `开始执行，共${operations.length}个CPU请求`,
+          "info"
+        );
+
+        advanceAnimation(true);
+      } catch (error) {
+        $("runStatus").textContent =
+          `错误：${error.message}`;
+      }
+    }
+
+    function pauseRun() {
+      if (!running) {
+        return;
+      }
+
+      paused = true;
+      clearTimeout(timer);
+
+      $("runStatus").textContent =
+        "动画已暂停，可选择继续或单步动画。";
+    }
+
+    function continueRun() {
+      if (
+        operations.length === 0
+      ) {
+        startRun();
+        return;
+      }
+
+      if (
+        operationIndex >= operations.length &&
+        phaseIndex >= phasePlan.length
+      ) {
+        return;
+      }
+
+      running = true;
+      paused = false;
+
+      $("runStatus").textContent =
+        "继续自动运行。";
+
+      scheduleNext();
+    }
+
+    function stepRun() {
+      try {
+        if (operations.length === 0) {
+          operations =
+            buildOperations();
+        }
+
+        clearTimeout(timer);
+
+        running = true;
+        paused = true;
+
+        advanceAnimation(false);
+      } catch (error) {
+        $("runStatus").textContent =
+          `错误：${error.message}`;
+      }
+    }
+
+    function restartRun() {
+      try {
+        resetModel();
+
+        operations =
+          buildOperations();
+
+        $("runStatus").textContent =
+          `已重新开始并清空Cache、Memory和统计。` +
+          `队列中共有${operations.length}个请求。`;
+
+        renderAll();
+      } catch (error) {
+        $("runStatus").textContent =
+          `错误：${error.message}`;
+      }
+    }
+
+    function renderDecode() {
+      $("decodeOperation").textContent =
+        currentOperation
+          ? currentOperation.type
+          : "—";
+
+      $("decodeAddress").textContent =
+        currentOperation
+          ? hex(currentOperation.address)
+          : "0x00000000";
+
+      $("decodeTag").textContent =
+        hex(currentDecode.tag, 5);
+
+      $("decodeSet").textContent =
+        `${currentDecode.set} ` +
+        `(${hex(currentDecode.set, 2)})`;
+
+      $("decodeWord").textContent =
+        String(currentDecode.word);
+
+      $("decodeByte").textContent =
+        String(currentDecode.byte);
+
+      $("decodeWriteData").textContent =
+        currentOperation &&
+        currentOperation.type === "WRITE"
+          ? hex(currentOperation.data)
+          : "—";
+    }
+
+    function renderStats() {
+      $("statAccess").textContent =
+        stats.access;
+
+      $("statHit").textContent =
+        stats.hit;
+
+      $("statMiss").textContent =
+        stats.miss;
+
+      $("statHitRate").textContent =
+        getHitRate();
+
+      $("statDdrRead").textContent =
+        stats.ddrRead;
+
+      $("statDdrWrite").textContent =
+        stats.ddrWrite;
+
+      $("statWriteback").textContent =
+        stats.writeback;
+
+      $("statProgress").textContent =
+        `${operationIndex} / ${operations.length}`;
+
+      const progress =
+        operations.length === 0
+          ? 0
+          : (
+            operationIndex /
+            operations.length *
+            100
+          );
+
+      $("progressBar").style.width =
+        `${progress}%`;
+    }
+
+    function renderCache() {
+      const setIndex =
+        currentDecode.set;
+
+      const set =
+        cache[setIndex];
+
+      $("currentSetLabel").textContent =
+        `Set ${setIndex}`;
+
+      const body =
+        $("cacheBody");
+
+      body.innerHTML = "";
+
+      for (
+        let wayIndex = WAYS - 1;
+        wayIndex >= 0;
+        wayIndex--
+      ) {
+        const way =
+          set.ways[wayIndex];
+
+        const row =
+          document.createElement("tr");
+
+        const rowClasses = [];
+
+        if (!way.valid) {
+          rowClasses.push("invalid-row");
+        }
+
+        if (
+          way.valid &&
+          way.dirty
+        ) {
+          rowClasses.push("dirty-row");
+        }
+
+        if (
+          wayIndex === highlightedWay
+        ) {
+          rowClasses.push("active-row");
+        }
+
+        row.className =
+          rowClasses.join(" ");
+
+        const base =
+          way.valid
+            ? lineBaseFromTag(
+                way.tag,
+                setIndex
+              )
+            : 0;
+
+        let html = `
+          <td>Way ${wayIndex}</td>
+          <td>${way.valid ? 1 : 0}</td>
+          <td>${way.dirty ? 1 : 0}</td>
+          <td>
+            ${way.valid ? hex(way.tag, 5) : "—"}
+          </td>
+          <td>
+            ${set.ranks[wayIndex]}
+            ${
+              set.ranks[wayIndex] === 0
+                ? " MRU"
+                : (
+                  set.ranks[wayIndex] === 3
+                    ? " LRU"
+                    : ""
+                )
+            }
+          </td>
+        `;
+
+        for (
+          let wordIndex = 0;
+          wordIndex < WORDS;
+          wordIndex++
+        ) {
+          const classes = [];
+
+          if (
+            wordIndex === currentDecode.word
+          ) {
+            classes.push("active-word");
+          }
+
+          if (
+            wayIndex === highlightedWay &&
+            wordIndex === currentDecode.word
+          ) {
+            classes.push("hit-word");
+          }
+
+          html += `
+            <td class="${classes.join(" ")}">
+              <span class="word-address">
+                ${
+                  way.valid
+                    ? hex(base + wordIndex * 4)
+                    : "—"
+                }
+              </span>
+
+              <span class="word-value">
+                ${
+                  way.valid
+                    ? hex(way.data[wordIndex])
+                    : "Invalid"
+                }
+              </span>
+            </td>
+          `;
+        }
+
+        row.innerHTML = html;
+        body.appendChild(row);
+      }
+    }
+
+    function renderMemoryLine() {
+      const container =
+        $("memoryLine");
+
+      container.innerHTML = "";
+
+      for (
+        let wordIndex = 0;
+        wordIndex < WORDS;
+        wordIndex++
+      ) {
+        const address =
+          (
+            memoryViewBase +
+            wordIndex * 4
+          ) >>> 0;
+
+        const item =
+          document.createElement("div");
+
+        item.className =
+          "memory-word";
+
+        item.innerHTML = `
+          <small>Word ${wordIndex}</small>
+          <strong>${hex(address)}</strong>
+          <code>${hex(peekMemory(address))}</code>
+        `;
+
+        container.appendChild(item);
+      }
+    }
+
+    function renderRecentMemory() {
+      const container =
+        $("recentMemory");
+
+      container.innerHTML = "";
+
+      const events =
+        memoryEvents.slice(-8).reverse();
+
+      if (events.length === 0) {
+        for (
+          let index = 0;
+          index < WORDS;
+          index++
+        ) {
+          events.push({
+            operation: "—",
+            address:
+              (
+                memoryViewBase +
+                index * 4
+              ) >>> 0,
+            value:
+              peekMemory(
+                memoryViewBase +
+                index * 4
+              ),
+            source: "未访问"
+          });
+        }
+      }
+
+      events.forEach(
+        (event, index) => {
+          const item =
+            document.createElement("div");
+
+          const operationClass =
+            event.operation === "READ"
+              ? "read"
+              : (
+                event.operation === "WRITE"
+                  ? "write"
+                  : ""
+              );
+
+          item.className =
+            `recent-word ${operationClass}`;
+
+          item.title =
+            event.source;
+
+          item.innerHTML = `
+            <small>最近 ${index + 1}</small>
+            <strong>${hex(event.address)}</strong>
+            <code>
+              ${hex(peekMemory(event.address))}
+            </code>
+            <span>
+              ${event.operation} · ${event.source}
+            </span>
+          `;
+
+          container.appendChild(item);
+        }
+      );
+    }
+
+    function renderAll() {
+      renderDecode();
+      renderStats();
+      renderCache();
+      renderMemoryLine();
+      renderRecentMemory();
+      updateNodeText();
+    }
+
+    $("startButton").addEventListener(
+      "click",
+      startRun
+    );
+
+    $("pauseButton").addEventListener(
+      "click",
+      pauseRun
+    );
+
+    $("continueButton").addEventListener(
+      "click",
+      continueRun
+    );
+
+    $("stepButton").addEventListener(
+      "click",
+      stepRun
+    );
+
+    $("restartButton").addEventListener(
+      "click",
+      restartRun
+    );
+
+    resetModel();
+  </script>
+</body>
+</html>
