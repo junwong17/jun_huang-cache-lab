@@ -362,7 +362,146 @@
       color: #8296aa;
       border-top: 1px solid #294661;
     }
+    .cycle-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  align-items: end;
+  margin-bottom: 15px;
+}
 
+.cycle-speed-label {
+  min-width: 155px;
+}
+
+.cycle-status-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 9px;
+}
+
+.cycle-status {
+  min-height: 75px;
+  padding: 11px;
+  text-align: center;
+  border: 1px solid #315574;
+  border-radius: 8px;
+  background: #091d30;
+}
+
+.cycle-status small {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+}
+
+.cycle-status strong {
+  color: var(--yellow);
+  font-family: Consolas, monospace;
+}
+
+.cycle-request {
+  margin-top: 12px;
+  padding: 11px;
+  color: #c7d6e5;
+  border: 1px solid #315574;
+  border-radius: 8px;
+  background: #081929;
+}
+
+.sub-title {
+  margin: 16px 0 10px;
+  color: #b9dcff;
+}
+
+.fill-buffer-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 7px;
+}
+
+.fill-word {
+  min-height: 84px;
+  padding: 9px 5px;
+  text-align: center;
+  border: 1px solid #315574;
+  border-radius: 8px;
+  background: #071725;
+}
+
+.fill-word small,
+.fill-word strong,
+.fill-word code {
+  display: block;
+  margin: 4px 0;
+}
+
+.fill-word small {
+  color: var(--muted);
+}
+
+.fill-word strong {
+  color: #8294a8;
+}
+
+.fill-word code {
+  color: #71879d;
+  font-size: 11px;
+}
+
+.fill-word.valid {
+  border-color: var(--green);
+  background: #123f2d;
+}
+
+.fill-word.valid strong {
+  color: var(--green);
+}
+
+.fill-word.valid code {
+  color: #a7edc8;
+}
+
+.fill-word.current {
+  border-color: var(--yellow);
+  box-shadow: 0 0 15px rgba(255, 209, 102, 0.35);
+  transform: translateY(-2px);
+}
+
+.cycle-progress {
+  height: 9px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #071522;
+}
+
+#cycleProgressBar {
+  width: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2c83c7, #62d69a);
+  transition: width 0.2s ease;
+}
+
+@media (max-width: 1100px) {
+  .cycle-status-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .fill-buffer-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .cycle-status-grid,
+  .fill-buffer-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+    
     @media (max-width: 950px) {
       .grid2 {
         grid-template-columns: 1fr;
@@ -388,7 +527,8 @@
   <header>
     <h1>Jun Huang KR4 D-Cache Simulator</h1>
     <p>KR4 32-bit RISC-V · 8 KB · 64 Sets · 4 Ways · True LRU</p>
-    <p>V0.3 · GitHub：junwong17</p>
+    <p>V0.4 · GitHub：junwong17</p>
+
 
 
     <nav>
@@ -598,14 +738,98 @@
 </div>
     </section>
 
+    <section class="panel" style="margin-bottom:16px;">
+  <h2>5. 逐周期Cache控制器</h2>
+
+  <div class="cycle-toolbar">
+    <button id="cycleStartBtn" class="green">
+      载入当前CPU请求
+    </button>
+
+    <button id="cycleStepBtn" class="yellow">
+      前进一个周期
+    </button>
+
+    <button id="cyclePlayBtn">
+      自动逐周期运行
+    </button>
+
+    <button id="cyclePauseBtn">
+      暂停逐周期运行
+    </button>
+
+    <button id="cycleAbortBtn" class="red">
+      中止事务
+    </button>
+
+    <label class="cycle-speed-label">
+      周期间隔
+      <select id="cycleSpeed">
+        <option value="1200">慢速 1.2秒</option>
+        <option value="700" selected>正常 0.7秒</option>
+        <option value="250">快速 0.25秒</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="cycle-status-grid">
+    <div class="cycle-status">
+      <small>Cycle</small>
+      <strong id="cycleNumber">0</strong>
+    </div>
+
+    <div class="cycle-status">
+      <small>Current State</small>
+      <strong id="cycleState">IDLE</strong>
+    </div>
+
+    <div class="cycle-status">
+      <small>Hit Way</small>
+      <strong id="cycleHitWay">—</strong>
+    </div>
+
+    <div class="cycle-status">
+      <small>Victim Way</small>
+      <strong id="cycleVictimWay">—</strong>
+    </div>
+
+    <div class="cycle-status">
+      <small>Current Beat</small>
+      <strong id="cycleBeat">—</strong>
+    </div>
+
+    <div class="cycle-status">
+      <small>line_valid[7:0]</small>
+      <strong id="lineValidValue">00000000</strong>
+    </div>
+  </div>
+
+  <div class="cycle-request">
+    <strong>Pending Request：</strong>
+    <span id="cycleRequestText">尚未载入请求</span>
+  </div>
+
+  <h3 class="sub-title">Line Fill Buffer</h3>
+
+  <div id="fillBufferGrid" class="fill-buffer-grid"></div>
+
+  <div class="cycle-progress">
+    <div id="cycleProgressBar"></div>
+  </div>
+
+  <div id="cycleMessage" class="result info">
+    点击“载入当前CPU请求”，再使用“前进一个周期”观察事务。
+  </div>
+</section>
+
     <section class="grid2">
       <div class="panel">
-        <h2>5. 逐笔事务日志</h2>
+        <h2>6. 逐笔事务日志</h2>
         <div id="eventLog" class="log"></div>
       </div>
 
       <div class="panel">
-        <h2>6. 已确认的物理组织</h2>
+        <h2>7. 已确认的物理组织</h2>
 
         <div class="mapping">
           <strong>Data SRAM：512 × 128 bit</strong><br>
@@ -655,6 +879,31 @@
     let currentSet = 0;
     let currentWord = 0;
     let highlightedWay = -1;
+
+    let cycleTimer = null;
+
+let cycleContext = {
+  active: false,
+  cycle: 0,
+  state: "IDLE",
+  request: null,
+  decoded: null,
+
+  hitWay: -1,
+  victimWay: -1,
+
+  victimSnapshot: null,
+
+  writeBackBeat: 0,
+  refillBeat: 0,
+  installBeat: 0,
+
+  fillBuffer: new Array(WORDS).fill(0),
+  lineValid: 0,
+
+  currentBeat: -1,
+  message: "等待载入CPU请求。"
+};
 
     const $ = id => document.getElementById(id);
 
@@ -706,6 +955,8 @@
 
     function resetCache() {
       pause();
+      cyclePause();
+
 
       cache = [];
 
@@ -736,6 +987,8 @@
       updateDecode(decode(parseHex($("address").value)));
       updateQueue();
       render();
+      resetCycleContext();
+
 
       showResult(
         "Cache已重置：所有Way均为Invalid。",
@@ -1096,8 +1349,13 @@ function executeDwbInv() {
               "hit"
             );
           } else {
-            way.dirty = false;
-            memoryWrite(decoded.address, data);
+/*
+ * Write-through只保证本次写入的Word同步到DDR。
+ * 如果该Line是从Write-back模式遗留的Dirty Line，
+ * 不能仅凭一次Word Write-through清除整条Line的Dirty。
+ */
+memoryWrite(decoded.address, data);
+
 
             showResult(
               `WRITE HIT：更新Way ${hitWay}并Write-through到DDR。`,
@@ -1421,6 +1679,805 @@ $("victimValue").textContent =
         $("eventLog").scrollHeight;
     }
 
+     function resetCycleContext() {
+  cyclePause();
+
+  cycleContext = {
+    active: false,
+    cycle: 0,
+    state: "IDLE",
+    request: null,
+    decoded: null,
+
+    hitWay: -1,
+    victimWay: -1,
+
+    victimSnapshot: null,
+
+    writeBackBeat: 0,
+    refillBeat: 0,
+    installBeat: 0,
+
+    fillBuffer: new Array(WORDS).fill(0),
+    lineValid: 0,
+
+    currentBeat: -1,
+    message: "等待载入CPU请求。"
+  };
+
+  renderCycleController();
+}
+
+function cycleStateName(state) {
+  const names = {
+    IDLE: "IDLE",
+    CPU_REQUEST: "CPU Request",
+    TAG_LOOKUP: "Tag Lookup",
+    HIT_READ: "Read Hit",
+    HIT_WRITE: "Write Hit",
+    MISS_DETECT: "Miss Detect",
+    VICTIM_SELECT: "Victim Select",
+
+    WRITEBACK_AW: "Write-back AW",
+    WRITEBACK_W: "Write-back W Beat",
+    WRITEBACK_B: "Write-back B",
+
+    REFILL_AR: "Refill AR",
+    REFILL_R: "Refill R Beat",
+    DATA_INSTALL: "Data SRAM Install",
+    METADATA_COMMIT: "Metadata Commit",
+
+    NWA_AW: "NWA DDR AW",
+    NWA_W: "NWA DDR W",
+    NWA_B: "NWA DDR B",
+
+    CPU_RESPONSE: "CPU Response",
+    COMPLETE: "Complete"
+  };
+
+  return names[state] || state;
+}
+
+function loadCycleRequest() {
+  cyclePause();
+  pause();
+
+  if (cycleContext.active) {
+    showCycleMessage(
+      "已有逐周期事务正在执行，请先完成或中止。",
+      "miss"
+    );
+    return;
+  }
+
+  try {
+    const request = {
+      operation: $("operation").value,
+      address: parseHex($("address").value),
+      data: parseHex($("writeData").value),
+      writePolicy: $("writePolicy").value,
+      allocatePolicy: $("allocatePolicy").value
+    };
+
+    const decoded = decode(request.address);
+
+    cycleContext = {
+      active: true,
+      cycle: 0,
+      state: "CPU_REQUEST",
+      request,
+      decoded,
+
+      hitWay: -1,
+      victimWay: -1,
+
+      victimSnapshot: null,
+
+      writeBackBeat: 0,
+      refillBeat: 0,
+      installBeat: 0,
+
+      fillBuffer: new Array(WORDS).fill(0),
+      lineValid: 0,
+
+      currentBeat: -1,
+      message: "CPU请求已经锁存，等待进入Tag Lookup。"
+    };
+
+    currentSet = decoded.set;
+    currentWord = decoded.word;
+    highlightedWay = -1;
+
+    $("displaySet").value = decoded.set;
+    updateDecode(decoded);
+
+    setSignals(0, 0, -1);
+    render();
+    renderCycleController();
+
+    log(
+      `Cycle Engine载入：CPU ${request.operation.toUpperCase()} ` +
+      `${hex(request.address)}` +
+      (
+        request.operation === "write"
+          ? ` Data=${hex(request.data)}`
+          : ""
+      ),
+      "meta"
+    );
+  } catch (error) {
+    showCycleMessage(error.message, "miss");
+  }
+}
+
+function cycleStep() {
+  if (!cycleContext.active) {
+    showCycleMessage(
+      "请先点击“载入当前CPU请求”。",
+      "miss"
+    );
+    cyclePause();
+    return;
+  }
+
+  const ctx = cycleContext;
+  const request = ctx.request;
+  const decoded = ctx.decoded;
+
+  ctx.cycle++;
+
+  switch (ctx.state) {
+    case "CPU_REQUEST": {
+      ctx.message =
+        `Cycle ${ctx.cycle}：锁存CPU请求，` +
+        `地址=${hex(request.address)}。`;
+
+      setSignals(0, 0, -1);
+      ctx.state = "TAG_LOOKUP";
+      break;
+    }
+
+    case "TAG_LOOKUP": {
+      setSignals(1, 0, -1);
+
+      ctx.hitWay = findHit(decoded);
+      highlightedWay = ctx.hitWay;
+
+      if (ctx.hitWay >= 0) {
+        ctx.message =
+          `4-Way并行Tag Compare命中Way ${ctx.hitWay}。`;
+
+        ctx.state =
+          request.operation === "read"
+            ? "HIT_READ"
+            : "HIT_WRITE";
+      } else {
+        ctx.message =
+          "4个Way均未命中，进入Miss处理。";
+
+        ctx.state = "MISS_DETECT";
+      }
+
+      break;
+    }
+
+    case "HIT_READ": {
+      const way =
+        cache[decoded.set].ways[ctx.hitWay];
+
+      setSignals(1, 0, -1);
+      touchWay(decoded.set, ctx.hitWay);
+
+      ctx.message =
+        `Read Hit：从Way ${ctx.hitWay}、Word ${decoded.word}` +
+        `读取${hex(way.data[decoded.word])}；True LRU更新。`;
+
+      log(ctx.message, "hit");
+      ctx.state = "CPU_RESPONSE";
+      break;
+    }
+
+    case "HIT_WRITE": {
+      const way =
+        cache[decoded.set].ways[ctx.hitWay];
+
+      setSignals(1, 1, ctx.hitWay);
+      way.data[decoded.word] = request.data;
+
+      if (request.writePolicy === "wb") {
+        way.dirty = true;
+
+        ctx.message =
+          `Write Hit：更新Way ${ctx.hitWay}、Word ${decoded.word}，` +
+          "Write-back模式下Dirty置1。";
+      } else {
+        /*
+         * 不主动清除旧Dirty。
+         * 如果从Write-back模式切换而来，其他Word可能仍未同步。
+         */
+        memoryWrite(
+          request.address,
+          request.data
+        );
+
+        ctx.message =
+          `Write Hit：更新Way ${ctx.hitWay}、Word ${decoded.word}，` +
+          "同时Write-through到DDR。";
+      }
+
+      touchWay(decoded.set, ctx.hitWay);
+      log(ctx.message, "hit");
+
+      ctx.state = "CPU_RESPONSE";
+      break;
+    }
+
+    case "MISS_DETECT": {
+      setSignals(0, 0, -1);
+
+      if (
+        request.operation === "write" &&
+        request.allocatePolicy === "nwa"
+      ) {
+        ctx.message =
+          "Write Miss + Non-write-allocate：" +
+          "不选择Victim、不Refill，直接进入DDR Write。";
+
+        ctx.state = "NWA_AW";
+      } else {
+        ctx.message =
+          "Miss需要Allocate，进入Victim选择。";
+
+        ctx.state = "VICTIM_SELECT";
+      }
+
+      log(ctx.message, "miss");
+      break;
+    }
+
+    case "VICTIM_SELECT": {
+      const victim =
+        chooseVictim(decoded.set);
+
+      const oldWay =
+        cache[decoded.set].ways[victim];
+
+      ctx.victimWay = victim;
+      highlightedWay = victim;
+
+      ctx.victimSnapshot = {
+        valid: oldWay.valid,
+        dirty: oldWay.dirty,
+        tag: oldWay.tag,
+        data: oldWay.data.slice()
+      };
+
+      if (oldWay.valid && oldWay.dirty) {
+        ctx.message =
+          `选择Way ${victim}作为LRU Victim；` +
+          "Victim为Dirty，必须先Write-back。";
+
+        ctx.state = "WRITEBACK_AW";
+      } else {
+        ctx.message =
+          `选择Way ${victim}作为` +
+          `${oldWay.valid ? "Clean LRU Victim" : "Invalid Way"}；` +
+          "不需要Write-back。";
+
+        ctx.state = "REFILL_AR";
+      }
+
+      log(ctx.message, "meta");
+      break;
+    }
+
+    case "WRITEBACK_AW": {
+      setSignals(0, 0, -1);
+
+      ctx.writeBackBeat = 0;
+      ctx.currentBeat = 0;
+
+      ctx.message =
+        `DDR AW：发送Victim Line地址` +
+        `${hex(
+          victimLineBase(
+            ctx.victimSnapshot.tag,
+            decoded.set
+          )
+        )}。`;
+
+      log(ctx.message, "ddr");
+      ctx.state = "WRITEBACK_W";
+      break;
+    }
+
+    case "WRITEBACK_W": {
+      const beat = ctx.writeBackBeat;
+
+      const base = victimLineBase(
+        ctx.victimSnapshot.tag,
+        decoded.set
+      );
+
+      const address =
+        (base + beat * 4) >>> 0;
+
+      const data =
+        ctx.victimSnapshot.data[beat] >>> 0;
+
+      ctx.currentBeat = beat;
+
+      memoryWrite(address, data);
+
+      ctx.message =
+        `DDR W Beat ${beat}/7：` +
+        `${hex(address)} ← ${hex(data)}。`;
+
+      ctx.writeBackBeat++;
+
+      if (ctx.writeBackBeat >= WORDS) {
+        ctx.state = "WRITEBACK_B";
+      }
+
+      break;
+    }
+
+    case "WRITEBACK_B": {
+      setSignals(0, 0, -1);
+      ctx.currentBeat = -1;
+
+      ctx.message =
+        "DDR B Response：Dirty Victim整行Write-back完成。";
+
+      log(ctx.message, "ddr");
+      ctx.state = "REFILL_AR";
+      break;
+    }
+
+    case "REFILL_AR": {
+      setSignals(0, 0, -1);
+
+      ctx.refillBeat = 0;
+      ctx.lineValid = 0;
+      ctx.currentBeat = -1;
+      ctx.fillBuffer.fill(0);
+
+      ctx.message =
+        `DDR AR：请求32-byte Line ${hex(decoded.lineBase)}；` +
+        "本版D-Cache使用Linear 0→7返回顺序。";
+
+      log(ctx.message, "ddr");
+      ctx.state = "REFILL_R";
+      break;
+    }
+
+    case "REFILL_R": {
+      const word = ctx.refillBeat;
+      const address =
+        (decoded.lineBase + word * 4) >>> 0;
+
+      const data = memoryRead(address);
+
+      ctx.currentBeat = word;
+      ctx.fillBuffer[word] = data;
+      ctx.lineValid |= (1 << word);
+
+      ctx.message =
+        `DDR R Beat ${word}/7：Word ${word}，` +
+        `${hex(address)} → ${hex(data)}；` +
+        `line_valid=${binary8(ctx.lineValid)}。`;
+
+      log(ctx.message, "ddr");
+
+      ctx.refillBeat++;
+
+      if (ctx.refillBeat >= WORDS) {
+        /*
+         * Write-allocate时，Store数据覆盖Fill Buffer中的目标Word。
+         */
+        if (request.operation === "write") {
+          ctx.fillBuffer[decoded.word] =
+            request.data >>> 0;
+
+          log(
+            `Write Allocate：Store Data覆盖Fill Buffer Word ` +
+            `${decoded.word}。`,
+            "meta"
+          );
+        }
+
+        ctx.installBeat = 0;
+        ctx.state = "DATA_INSTALL";
+      }
+
+      break;
+    }
+
+    case "DATA_INSTALL": {
+      const word = ctx.installBeat;
+      const targetWay =
+        cache[decoded.set].ways[ctx.victimWay];
+
+      if (word === 0) {
+        /*
+         * Data安装期间Valid保持0，避免半条Line被正常命中。
+         */
+        targetWay.valid = false;
+        targetWay.dirty = false;
+        targetWay.tag = decoded.tag;
+      }
+
+      targetWay.data[word] =
+        ctx.fillBuffer[word] >>> 0;
+
+      currentWord = word;
+      ctx.currentBeat = word;
+
+      setSignals(1, 1, ctx.victimWay);
+
+      ctx.message =
+        `Data SRAM Install ${word}/7：` +
+        `ADR_0=${hex(
+          ((decoded.set << 3) | word),
+          3
+        )}，写入Way ${ctx.victimWay}，` +
+        `Data=${hex(ctx.fillBuffer[word])}。`;
+
+      log(ctx.message, "meta");
+
+      ctx.installBeat++;
+
+      if (ctx.installBeat >= WORDS) {
+        ctx.state = "METADATA_COMMIT";
+      }
+
+      break;
+    }
+
+    case "METADATA_COMMIT": {
+      const targetWay =
+        cache[decoded.set].ways[ctx.victimWay];
+
+      targetWay.tag = decoded.tag;
+      targetWay.valid = true;
+
+      if (
+        request.operation === "write" &&
+        request.writePolicy === "wb"
+      ) {
+        targetWay.dirty = true;
+      } else {
+        targetWay.dirty = false;
+      }
+
+      if (
+        request.operation === "write" &&
+        request.writePolicy === "wt"
+      ) {
+        memoryWrite(
+          request.address,
+          request.data
+        );
+      }
+
+      touchWay(
+        decoded.set,
+        ctx.victimWay
+      );
+
+      highlightedWay = ctx.victimWay;
+      ctx.currentBeat = -1;
+      setSignals(0, 0, -1);
+
+      ctx.message =
+        `Metadata Commit：Way ${ctx.victimWay} ` +
+        `Tag=${hex(decoded.tag, 5)}，Valid=1，` +
+        `Dirty=${targetWay.dirty ? 1 : 0}；True LRU更新。`;
+
+      log(ctx.message, "meta");
+      ctx.state = "CPU_RESPONSE";
+      break;
+    }
+
+    case "NWA_AW": {
+      setSignals(0, 0, -1);
+
+      ctx.message =
+        `DDR AW：Write Miss地址${hex(request.address)}。`;
+
+      log(ctx.message, "ddr");
+      ctx.state = "NWA_W";
+      break;
+    }
+
+    case "NWA_W": {
+      setSignals(0, 0, -1);
+
+      memoryWrite(
+        request.address,
+        request.data
+      );
+
+      ctx.message =
+        `DDR W：${hex(request.address)} ← ` +
+        `${hex(request.data)}；D-Cache不分配Way。`;
+
+      ctx.state = "NWA_B";
+      break;
+    }
+
+    case "NWA_B": {
+      ctx.message =
+        "DDR B Response：Non-write-allocate Write完成。";
+
+      log(ctx.message, "ddr");
+      ctx.state = "CPU_RESPONSE";
+      break;
+    }
+
+    case "CPU_RESPONSE": {
+      setSignals(0, 0, -1);
+
+      if (
+        request.operation === "read" &&
+        ctx.hitWay >= 0
+      ) {
+        const data =
+          cache[decoded.set]
+            .ways[ctx.hitWay]
+            .data[decoded.word];
+
+        ctx.message =
+          `CPU Read Response：${hex(data)}。`;
+      } else if (
+        request.operation === "read" &&
+        ctx.victimWay >= 0
+      ) {
+        const data =
+          cache[decoded.set]
+            .ways[ctx.victimWay]
+            .data[decoded.word];
+
+        ctx.message =
+          `CPU Read Response：${hex(data)}。`;
+      } else {
+        ctx.message =
+          "CPU Write Response：事务完成。";
+      }
+
+      log(ctx.message, "hit");
+      ctx.state = "COMPLETE";
+      break;
+    }
+
+    case "COMPLETE": {
+      ctx.message =
+        `事务完成，共使用${ctx.cycle}个可视化周期。`;
+
+      ctx.active = false;
+      ctx.state = "IDLE";
+      ctx.currentBeat = -1;
+
+      setSignals(0, 0, -1);
+      cyclePause();
+
+      showResult(
+        ctx.message,
+        "info"
+      );
+
+      log(ctx.message, "meta");
+      break;
+    }
+
+    default: {
+      ctx.active = false;
+      ctx.state = "IDLE";
+      ctx.message = "未知状态，事务已中止。";
+      cyclePause();
+      break;
+    }
+  }
+
+  render();
+  renderCycleController();
+}
+
+function binary8(value) {
+  return (value & 0xFF)
+    .toString(2)
+    .padStart(8, "0");
+}
+
+function renderCycleController() {
+  const ctx = cycleContext;
+
+  $("cycleNumber").textContent =
+    ctx.cycle;
+
+  $("cycleState").textContent =
+    cycleStateName(ctx.state);
+
+  $("cycleHitWay").textContent =
+    ctx.hitWay >= 0
+      ? `Way ${ctx.hitWay}`
+      : "—";
+
+  $("cycleVictimWay").textContent =
+    ctx.victimWay >= 0
+      ? `Way ${ctx.victimWay}`
+      : "—";
+
+  $("cycleBeat").textContent =
+    ctx.currentBeat >= 0
+      ? `${ctx.currentBeat} / 7`
+      : "—";
+
+  $("lineValidValue").textContent =
+    binary8(ctx.lineValid);
+
+  if (ctx.request && ctx.decoded) {
+    $("cycleRequestText").textContent =
+      `${ctx.request.operation.toUpperCase()} ` +
+      `${hex(ctx.request.address)}` +
+      (
+        ctx.request.operation === "write"
+          ? ` Data=${hex(ctx.request.data)}`
+          : ""
+      ) +
+      ` · Set=${ctx.decoded.set}` +
+      ` · Word=${ctx.decoded.word}`;
+  } else {
+    $("cycleRequestText").textContent =
+      "尚未载入请求";
+  }
+
+  renderFillBuffer();
+
+  const validCount = countValidBits(
+    ctx.lineValid
+  );
+
+  $("cycleProgressBar").style.width =
+    `${validCount * 12.5}%`;
+
+  showCycleMessage(
+    ctx.message,
+    ctx.state === "MISS_DETECT"
+      ? "miss"
+      : ctx.state === "COMPLETE"
+        ? "hit"
+        : "info"
+  );
+}
+
+function renderFillBuffer() {
+  const container = $("fillBufferGrid");
+  container.innerHTML = "";
+
+  for (let word = 0; word < WORDS; word++) {
+    const valid =
+      (cycleContext.lineValid & (1 << word)) !== 0;
+
+    const cell = document.createElement("div");
+
+    cell.className =
+      "fill-word" +
+      (valid ? " valid" : "") +
+      (
+        cycleContext.currentBeat === word
+          ? " current"
+          : ""
+      );
+
+    cell.innerHTML = `
+      <small>Word ${word}</small>
+      <strong>${valid ? "Valid" : "Empty"}</strong>
+      <code>
+        ${valid
+          ? hex(cycleContext.fillBuffer[word])
+          : "--------"}
+      </code>
+    `;
+
+    container.appendChild(cell);
+  }
+}
+
+function countValidBits(value) {
+  let count = 0;
+
+  for (let bit = 0; bit < 8; bit++) {
+    if (value & (1 << bit)) {
+      count++;
+    }
+  }
+
+  return count;
+}
+
+function showCycleMessage(message, type) {
+  const box = $("cycleMessage");
+
+  if (!box) {
+    return;
+  }
+
+  box.textContent = message;
+  box.className = `result ${type}`;
+}
+
+function cyclePlay() {
+  if (!cycleContext.active) {
+    showCycleMessage(
+      "请先载入当前CPU请求。",
+      "miss"
+    );
+    return;
+  }
+
+  if (cycleTimer !== null) {
+    return;
+  }
+
+  const interval =
+    Number.parseInt(
+      $("cycleSpeed").value,
+      10
+    );
+
+  cycleTimer = window.setInterval(() => {
+    if (!cycleContext.active) {
+      cyclePause();
+      return;
+    }
+
+    cycleStep();
+  }, interval);
+}
+
+function cyclePause() {
+  if (cycleTimer !== null) {
+    window.clearInterval(cycleTimer);
+    cycleTimer = null;
+  }
+}
+
+function cycleAbort() {
+  cyclePause();
+
+  /*
+   * 如果在Data安装途中中止，目标Way的Valid仍为0，
+   * 因此不会命中半条Cache Line。
+   */
+  if (
+    cycleContext.active &&
+    cycleContext.victimWay >= 0 &&
+    (
+      cycleContext.state === "DATA_INSTALL" ||
+      cycleContext.state === "METADATA_COMMIT"
+    )
+  ) {
+    const target =
+      cache[cycleContext.decoded.set]
+        .ways[cycleContext.victimWay];
+
+    target.valid = false;
+    target.dirty = false;
+  }
+
+  cycleContext.active = false;
+  cycleContext.state = "IDLE";
+  cycleContext.currentBeat = -1;
+  cycleContext.message =
+    "逐周期事务已中止。必要时可点击“重置Cache”恢复初始状态。";
+
+  setSignals(0, 0, -1);
+  render();
+  renderCycleController();
+}
+
+    
     function loadScenario() {
       pause();
 
@@ -1583,6 +2640,30 @@ $("dinvBtn").addEventListener(
 $("dwbinvBtn").addEventListener(
   "click",
   executeDwbInv
+);
+$("cycleStartBtn").addEventListener(
+  "click",
+  loadCycleRequest
+);
+
+$("cycleStepBtn").addEventListener(
+  "click",
+  cycleStep
+);
+
+$("cyclePlayBtn").addEventListener(
+  "click",
+  cyclePlay
+);
+
+$("cyclePauseBtn").addEventListener(
+  "click",
+  cyclePause
+);
+
+$("cycleAbortBtn").addEventListener(
+  "click",
+  cycleAbort
 );
 
     resetCache();
