@@ -602,6 +602,70 @@
   background: rgba(89, 71, 25, 0.74);
 }
 
+.axi-status-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(110px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.axi-status {
+  min-height: 72px;
+  padding: 10px 7px;
+  text-align: center;
+  border: 1px solid #315574;
+  border-radius: 8px;
+  background: #081a2b;
+}
+
+.axi-status small {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+}
+
+.axi-status strong {
+  color: var(--yellow);
+  font-family: Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.axi-status.active-read {
+  border-color: var(--green);
+  background: #123f2d;
+}
+
+.axi-status.active-write {
+  border-color: var(--yellow);
+  background: #594719;
+}
+
+.memory-event-wrap {
+  max-height: 360px;
+  overflow: auto;
+}
+
+.memory-event-read td {
+  background: rgba(20, 67, 49, 0.72);
+}
+
+.memory-event-write td {
+  background: rgba(89, 71, 25, 0.74);
+}
+
+@media (max-width: 1100px) {
+  .axi-status-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .axi-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+    
 @media (max-width: 1100px) {
   .memory-toolbar {
     grid-template-columns: repeat(2, 1fr);
@@ -669,7 +733,7 @@
   <header>
     <h1>Jun Huang KR4 D-Cache Simulator</h1>
     <p>KR4 32-bit RISC-V · 8 KB · 64 Sets · 4 Ways · True LRU</p>
-    <p>V0.5 · GitHub：junwong17</p>
+    <p>V0.6 · GitHub：junwong17</p>
 
 
 
@@ -1029,6 +1093,45 @@
     </div>
   </div>
 
+     <h3 class="sub-title">DDR / AXI当前事务</h3>
+
+<div class="axi-status-grid">
+  <div class="axi-status">
+    <small>Channel</small>
+    <strong id="axiChannel">IDLE</strong>
+  </div>
+
+  <div class="axi-status">
+    <small>Direction</small>
+    <strong id="axiDirection">—</strong>
+  </div>
+
+  <div class="axi-status">
+    <small>Address</small>
+    <strong id="axiAddress">—</strong>
+  </div>
+
+  <div class="axi-status">
+    <small>Data</small>
+    <strong id="axiData">—</strong>
+  </div>
+
+  <div class="axi-status">
+    <small>Beat</small>
+    <strong id="axiBeat">—</strong>
+  </div>
+
+  <div class="axi-status">
+    <small>LAST</small>
+    <strong id="axiLast">0</strong>
+  </div>
+
+  <div class="axi-status">
+    <small>Source</small>
+    <strong id="axiSource">—</strong>
+  </div>
+</div>
+
   <h3 class="sub-title">当前32-byte Memory Line</h3>
 
   <div id="memoryLineGrid" class="memory-line-grid"></div>
@@ -1053,6 +1156,28 @@
     </table>
   </div>
 
+     <h3 class="sub-title">逐笔DDR事务时间线</h3>
+
+<div class="table-wrap memory-event-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>操作</th>
+        <th>Word地址</th>
+        <th>旧值</th>
+        <th>新值/读取值</th>
+        <th>Beat</th>
+        <th>LAST</th>
+        <th>访问来源</th>
+      </tr>
+    </thead>
+
+    <tbody id="memoryEventBody"></tbody>
+  </table>
+</div>
+
+     
   <p class="mapping">
     Memory以32-bit Word地址显示。未写入的地址在上电后默认为
     <code>0x00000000</code>。<br>
@@ -1134,6 +1259,24 @@ let highlightedWay = -1;
 let memoryAccessInfo = new Map();
 let memoryAccessSequence = 0;
 
+  /*
+ * 每一次真实Memory访问都保存一条事件。
+ * 与memoryAccessInfo按地址汇总的用途不同。
+ */
+let memoryEvents = [];
+
+const MAX_MEMORY_EVENTS = 512;
+
+let axiStatus = {
+  channel: "IDLE",
+  direction: "—",
+  address: null,
+  data: null,
+  beat: null,
+  last: 0,
+  source: "—"
+};
+
 let currentMemoryAddress = null;
 let currentMemoryOperation = "—";
 let currentMemorySource = "—";
@@ -1209,6 +1352,29 @@ function countValidBits(value) {
  * 3. DDR Memory模型
  * ========================================================= */
 
+  function memoryBeatInfo(
+  address,
+  source
+) {
+  const word =
+    (address >>> 2) & 0x7;
+
+  const isLineTransaction =
+    source === "D-Cache Refill" ||
+    source === "D-Cache Write-back";
+
+  return {
+    beat: isLineTransaction
+      ? word
+      : 0,
+
+    last: isLineTransaction
+      ? (word === WORDS - 1 ? 1 : 0)
+      : 1
+  };
+}
+
+  
 function memoryRead(
   address,
   source = "DDR Read"
@@ -1216,13 +1382,18 @@ function memoryRead(
   const aligned =
     (address & 0xFFFFFFFC) >>> 0;
 
-  /*
-   * 稀疏Memory模型：
-   * Map中不存在的地址，其上电初始值为0。
-   */
   if (!memory.has(aligned)) {
     memory.set(aligned, 0);
   }
+
+  const data =
+    memory.get(aligned) >>> 0;
+
+  const beatInfo =
+    memoryBeatInfo(
+      aligned,
+      source
+    );
 
   recordMemoryAccess(
     aligned,
@@ -1230,7 +1401,27 @@ function memoryRead(
     source
   );
 
-  return memory.get(aligned) >>> 0;
+  recordMemoryEvent({
+    operation: "READ",
+    address: aligned,
+    oldData: data,
+    newData: data,
+    source,
+    beat: beatInfo.beat,
+    last: beatInfo.last
+  });
+
+  updateAxiStatus({
+    channel: "R",
+    direction: "READ",
+    address: aligned,
+    data,
+    beat: beatInfo.beat,
+    last: beatInfo.last,
+    source
+  });
+
+  return data;
 }
 
 function memoryWrite(
@@ -1241,9 +1432,21 @@ function memoryWrite(
   const aligned =
     (address & 0xFFFFFFFC) >>> 0;
 
+  const oldData =
+    peekMemory(aligned);
+
+  const newData =
+    data >>> 0;
+
+  const beatInfo =
+    memoryBeatInfo(
+      aligned,
+      source
+    );
+
   memory.set(
     aligned,
-    data >>> 0
+    newData
   );
 
   recordMemoryAccess(
@@ -1252,11 +1455,33 @@ function memoryWrite(
     source
   );
 
+  recordMemoryEvent({
+    operation: "WRITE",
+    address: aligned,
+    oldData,
+    newData,
+    source,
+    beat: beatInfo.beat,
+    last: beatInfo.last
+  });
+
+  updateAxiStatus({
+    channel: "W",
+    direction: "WRITE",
+    address: aligned,
+    data: newData,
+    beat: beatInfo.beat,
+    last: beatInfo.last,
+    source
+  });
+
   log(
-    `DDR Write ${hex(aligned)} ← ${hex(data)} · ${source}`,
+    `DDR Write ${hex(aligned)} ← ${hex(newData)} · ${source}`,
     "ddr"
   );
 }
+
+
 
 function peekMemory(address) {
   const aligned =
@@ -1322,6 +1547,160 @@ function recordMemoryAccess(
   }
 }
 
+function recordMemoryEvent(event) {
+  memoryEvents.push({
+    id: memoryEvents.length > 0
+      ? memoryEvents[memoryEvents.length - 1].id + 1
+      : 1,
+
+    operation: event.operation,
+    address: event.address >>> 0,
+    oldData: event.oldData >>> 0,
+    newData: event.newData >>> 0,
+    source: event.source,
+    beat: event.beat,
+    last: event.last
+  });
+
+  /*
+   * 防止长时间运行后表格无限增长。
+   */
+  if (memoryEvents.length > MAX_MEMORY_EVENTS) {
+    memoryEvents.shift();
+  }
+}
+
+function updateAxiStatus(status) {
+  axiStatus = {
+    channel: status.channel,
+    direction: status.direction,
+    address: status.address,
+    data: status.data,
+    beat: status.beat,
+    last: status.last,
+    source: status.source
+  };
+}
+
+function clearAxiStatus() {
+  axiStatus = {
+    channel: "IDLE",
+    direction: "—",
+    address: null,
+    data: null,
+    beat: null,
+    last: 0,
+    source: "—"
+  };
+}
+
+function renderAxiStatus() {
+  if (!$("axiChannel")) {
+    return;
+  }
+
+  $("axiChannel").textContent =
+    axiStatus.channel;
+
+  $("axiDirection").textContent =
+    axiStatus.direction;
+
+  $("axiAddress").textContent =
+    axiStatus.address === null
+      ? "—"
+      : hex(axiStatus.address);
+
+  $("axiData").textContent =
+    axiStatus.data === null
+      ? "—"
+      : hex(axiStatus.data);
+
+  $("axiBeat").textContent =
+    axiStatus.beat === null
+      ? "—"
+      : `${axiStatus.beat} / 7`;
+
+  $("axiLast").textContent =
+    axiStatus.last;
+
+  $("axiSource").textContent =
+    axiStatus.source;
+
+  const cells =
+    document.querySelectorAll(
+      ".axi-status"
+    );
+
+  cells.forEach(cell => {
+    cell.classList.remove(
+      "active-read",
+      "active-write"
+    );
+
+    if (axiStatus.direction === "READ") {
+      cell.classList.add("active-read");
+    } else if (
+      axiStatus.direction === "WRITE"
+    ) {
+      cell.classList.add("active-write");
+    }
+  });
+}
+
+function renderMemoryEvents() {
+  const body =
+    $("memoryEventBody");
+
+  if (!body) {
+    return;
+  }
+
+  body.innerHTML = "";
+
+  if (memoryEvents.length === 0) {
+    const row =
+      document.createElement("tr");
+
+    row.innerHTML = `
+      <td colspan="8">
+        尚无DDR事务。
+      </td>
+    `;
+
+    body.appendChild(row);
+    return;
+  }
+
+  const events =
+    memoryEvents
+      .slice()
+      .reverse();
+
+  for (const event of events) {
+    const row =
+      document.createElement("tr");
+
+    row.className =
+      event.operation === "WRITE"
+        ? "memory-event-write"
+        : "memory-event-read";
+
+    row.innerHTML = `
+      <td>${event.id}</td>
+      <td>${event.operation}</td>
+      <td>${hex(event.address)}</td>
+      <td>${hex(event.oldData)}</td>
+      <td>${hex(event.newData)}</td>
+      <td>${event.beat} / 7</td>
+      <td>${event.last}</td>
+      <td>${event.source}</td>
+    `;
+
+    body.appendChild(row);
+  }
+}
+
+  
 /*
  * 重要：
  * renderMemory现在是顶层函数，不在executeDwb内部。
@@ -1412,6 +1791,9 @@ function renderMemory() {
     `;
 
     traceBody.appendChild(row);
+    renderAxiStatus();
+renderMemoryEvents();
+
     return;
   }
 
@@ -1436,6 +1818,9 @@ function renderMemory() {
 
     traceBody.appendChild(row);
   }
+  renderAxiStatus();
+renderMemoryEvents();
+
 }
 
 
@@ -1694,6 +2079,10 @@ function powerOnReset() {
 
   memoryAccessInfo = new Map();
   memoryAccessSequence = 0;
+
+  memoryEvents = [];
+clearAxiStatus();
+
 
   currentMemoryAddress = null;
   currentMemoryOperation = "—";
@@ -3755,6 +4144,9 @@ $("memoryClearTraceBtn").addEventListener(
 
     currentMemorySource =
       "—";
+
+    memoryEvents = [];
+clearAxiStatus();
 
     renderMemory();
 
