@@ -484,6 +484,148 @@
   transition: width 0.2s ease;
 }
 
+.memory-toolbar {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 1.4fr)
+    minmax(160px, 0.8fr)
+    auto auto auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.memory-follow-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-height: 39px;
+  padding: 8px 11px;
+  border: 1px solid #396489;
+  border-radius: 8px;
+  background: #091b2e;
+}
+
+.memory-follow-label input {
+  width: auto;
+  min-height: auto;
+  margin: 0 0 0 9px;
+  accent-color: #62d69a;
+}
+
+.memory-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  gap: 9px;
+}
+
+.memory-summary {
+  min-height: 76px;
+  padding: 11px;
+  text-align: center;
+  border: 1px solid #315574;
+  border-radius: 8px;
+  background: #091d30;
+}
+
+.memory-summary small {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+}
+
+.memory-summary strong {
+  color: var(--yellow);
+  font-family: Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.memory-line-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 7px;
+}
+
+.memory-word {
+  min-height: 96px;
+  padding: 9px 5px;
+  text-align: center;
+  border: 1px solid #315574;
+  border-radius: 8px;
+  background: #071725;
+}
+
+.memory-word small,
+.memory-word strong,
+.memory-word code {
+  display: block;
+  margin: 4px 0;
+}
+
+.memory-word small {
+  color: var(--muted);
+}
+
+.memory-word strong {
+  color: #91cfff;
+  font-family: Consolas, monospace;
+  font-size: 12px;
+}
+
+.memory-word code {
+  color: #b9dcff;
+}
+
+.memory-word.last-read {
+  border-color: var(--green);
+  background: #123f2d;
+  box-shadow: 0 0 14px rgba(98, 214, 154, 0.25);
+}
+
+.memory-word.last-write {
+  border-color: var(--yellow);
+  background: #594719;
+  box-shadow: 0 0 14px rgba(255, 209, 102, 0.28);
+}
+
+.memory-trace-wrap {
+  max-height: 330px;
+  overflow: auto;
+}
+
+.memory-read-row td {
+  background: rgba(20, 67, 49, 0.72);
+}
+
+.memory-write-row td {
+  background: rgba(89, 71, 25, 0.74);
+}
+
+@media (max-width: 1100px) {
+  .memory-toolbar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .memory-summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .memory-line-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .memory-toolbar,
+  .memory-summary-grid,
+  .memory-line-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
+    
 @media (max-width: 1100px) {
   .cycle-status-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -527,7 +669,8 @@
   <header>
     <h1>Jun Huang KR4 D-Cache Simulator</h1>
     <p>KR4 32-bit RISC-V · 8 KB · 64 Sets · 4 Ways · True LRU</p>
-    <p>V0.4 · GitHub：junwong17</p>
+    <p>V0.5 · GitHub：junwong17</p>
+
 
 
 
@@ -581,10 +724,18 @@
             </select>
           </label>
 
-          <label>
-            显示Set
-            <input id="displaySet" type="number" min="0" max="63" value="0">
-          </label>
+<label>
+  当前地址Set（自动）
+  <input
+    id="displaySet"
+    type="number"
+    min="0"
+    max="63"
+    value="0"
+    readonly
+  >
+</label>
+
         </div>
 
         <div class="buttons">
@@ -822,14 +973,106 @@
   </div>
 </section>
 
+   <section class="panel" style="margin-bottom:16px;">
+  <h2>6. DDR Memory Monitor</h2>
+
+  <div class="memory-toolbar">
+    <label>
+      Memory查看地址
+      <input id="memoryViewAddress" value="0x60000000">
+    </label>
+
+    <label class="memory-follow-label">
+      <span>自动跟随CPU地址</span>
+      <input id="memoryFollowCpu" type="checkbox" checked>
+    </label>
+
+    <button id="memoryJumpBtn">
+      查看地址
+    </button>
+
+    <button id="memoryClearTraceBtn">
+      清除访问记录
+    </button>
+
+    <button id="powerOnResetBtn" class="red">
+      系统上电复位
+    </button>
+  </div>
+
+  <div class="memory-summary-grid">
+    <div class="memory-summary">
+      <small>当前Memory Line</small>
+      <strong id="memoryLineBase">
+        0x60000000～0x6000001F
+      </strong>
+    </div>
+
+    <div class="memory-summary">
+      <small>最近访问地址</small>
+      <strong id="memoryLastAddress">—</strong>
+    </div>
+
+    <div class="memory-summary">
+      <small>最近操作</small>
+      <strong id="memoryLastOperation">—</strong>
+    </div>
+
+    <div class="memory-summary">
+      <small>最近访问来源</small>
+      <strong id="memoryLastSource">—</strong>
+    </div>
+
+    <div class="memory-summary">
+      <small>已观察Word数量</small>
+      <strong id="memoryObservedCount">0</strong>
+    </div>
+  </div>
+
+  <h3 class="sub-title">当前32-byte Memory Line</h3>
+
+  <div id="memoryLineGrid" class="memory-line-grid"></div>
+
+  <h3 class="sub-title">Memory访问记录</h3>
+
+  <div class="table-wrap memory-trace-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>序号</th>
+          <th>Word地址</th>
+          <th>Data</th>
+          <th>最近操作</th>
+          <th>访问来源</th>
+          <th>Read次数</th>
+          <th>Write次数</th>
+        </tr>
+      </thead>
+
+      <tbody id="memoryTraceBody"></tbody>
+    </table>
+  </div>
+
+  <p class="mapping">
+    Memory以32-bit Word地址显示。未写入的地址在上电后默认为
+    <code>0x00000000</code>。<br>
+
+    Read Hit和Write-back Hit不会产生DDR Read；
+    Write-through Hit会产生一个DDR Word Write；
+    Non-write-allocate Write Miss只写DDR；
+    Refill会读取完整的8个Word。
+  </p>
+</section>
+
+    
     <section class="grid2">
       <div class="panel">
-        <h2>6. 逐笔事务日志</h2>
+        <h2>7. 逐笔事务日志</h2>
         <div id="eventLog" class="log"></div>
       </div>
 
       <div class="panel">
-        <h2>7. 已确认的物理组织</h2>
+        <h2>8. 已确认的物理组织</h2>
 
         <div class="mapping">
           <strong>Data SRAM：512 × 128 bit</strong><br>
@@ -879,6 +1122,21 @@
     let currentSet = 0;
     let currentWord = 0;
     let highlightedWay = -1;
+    /*
+ * DDR Memory模型：
+ *
+ * memory只保存被访问或被写入过的32-bit Word。
+ * Map中不存在的地址，代表上电初始值0x00000000。
+ */
+let memoryAccessInfo = new Map();
+let memoryAccessSequence = 0;
+
+let currentMemoryAddress = null;
+let currentMemoryOperation = "—";
+let currentMemorySource = "—";
+
+let memoryViewBase = 0x60000000;
+
 
     let cycleTimer = null;
 
@@ -973,7 +1231,7 @@ let cycleContext = {
         });
       }
 
-      memory = new Map();
+
       queue = [];
       queueIndex = 0;
       currentSet = 0;
@@ -1001,28 +1259,116 @@ let cycleContext = {
       );
     }
 
-    function memoryRead(address) {
-      const aligned = address & 0xFFFFFFFC;
+function memoryRead(
+  address,
+  source = "DDR Read"
+) {
+  const aligned =
+    (address & 0xFFFFFFFC) >>> 0;
 
-      if (!memory.has(aligned)) {
-        memory.set(
-          aligned,
-          (aligned ^ 0x5A5A0000) >>> 0
-        );
-      }
+  /*
+   * 上电后的默认Memory值全部为0。
+   */
+  if (!memory.has(aligned)) {
+    memory.set(aligned, 0);
+  }
 
-      return memory.get(aligned) >>> 0;
-    }
+  recordMemoryAccess(
+    aligned,
+    "READ",
+    source
+  );
 
-    function memoryWrite(address, data) {
-      const aligned = address & 0xFFFFFFFC;
-      memory.set(aligned, data >>> 0);
+  return memory.get(aligned) >>> 0;
+}
 
-      log(
-        `DDR Write ${hex(aligned)} ← ${hex(data)}`,
-        "ddr"
-      );
-    }
+
+function memoryWrite(
+  address,
+  data,
+  source = "DDR Write"
+) {
+  const aligned =
+    (address & 0xFFFFFFFC) >>> 0;
+
+  memory.set(
+    aligned,
+    data >>> 0
+  );
+
+  recordMemoryAccess(
+    aligned,
+    "WRITE",
+    source
+  );
+
+  log(
+    `DDR Write ${hex(aligned)} ← ${hex(data)} · ${source}`,
+    "ddr"
+  );
+}
+
+function recordMemoryAccess(
+  address,
+  operation,
+  source
+) {
+  const aligned =
+    (address & 0xFFFFFFFC) >>> 0;
+
+  memoryAccessSequence++;
+
+  let info = memoryAccessInfo.get(aligned);
+
+  if (!info) {
+    info = {
+      reads: 0,
+      writes: 0,
+      lastOperation: "—",
+      lastSource: "—",
+      lastSequence: 0
+    };
+  }
+
+  if (operation === "READ") {
+    info.reads++;
+  } else if (operation === "WRITE") {
+    info.writes++;
+  }
+
+  info.lastOperation = operation;
+  info.lastSource = source;
+  info.lastSequence = memoryAccessSequence;
+
+  memoryAccessInfo.set(aligned, info);
+
+  currentMemoryAddress = aligned;
+  currentMemoryOperation = operation;
+  currentMemorySource = source;
+
+  /*
+   * 自动跟随时，Memory窗口切换到最近访问的32-byte Line。
+   */
+  if (
+    $("memoryFollowCpu") &&
+    $("memoryFollowCpu").checked
+  ) {
+    memoryViewBase =
+      (aligned & 0xFFFFFFE0) >>> 0;
+
+    $("memoryViewAddress").value =
+      hex(aligned);
+  }
+}
+
+function peekMemory(address) {
+  const aligned =
+    (address & 0xFFFFFFFC) >>> 0;
+
+  return memory.has(aligned)
+    ? memory.get(aligned) >>> 0
+    : 0;
+}
 
     function findHit(decoded) {
       return cache[decoded.set].ways.findIndex(
@@ -1100,10 +1446,12 @@ let cycleContext = {
       );
 
       for (let word = 0; word < WORDS; word++) {
-        memoryWrite(
-          base + word * 4,
-          way.data[word]
-        );
+memoryWrite(
+  base + word * 4,
+  way.data[word],
+  "D-Cache Write-back"
+);
+
       }
 
       way.dirty = false;
@@ -1161,6 +1509,111 @@ function executeDwb() {
   }
 
   setSignals(0, 0, -1);
+  function renderMemory() {
+  if (
+    !$("memoryLineGrid") ||
+    !$("memoryTraceBody")
+  ) {
+    return;
+  }
+
+  const base =
+    (memoryViewBase & 0xFFFFFFE0) >>> 0;
+
+  $("memoryLineBase").textContent =
+    `${hex(base)}～${hex((base + 0x1F) >>> 0)}`;
+
+  $("memoryLastAddress").textContent =
+    currentMemoryAddress === null
+      ? "—"
+      : hex(currentMemoryAddress);
+
+  $("memoryLastOperation").textContent =
+    currentMemoryOperation;
+
+  $("memoryLastSource").textContent =
+    currentMemorySource;
+
+  $("memoryObservedCount").textContent =
+    memoryAccessInfo.size;
+
+  const lineGrid = $("memoryLineGrid");
+  lineGrid.innerHTML = "";
+
+  for (let word = 0; word < WORDS; word++) {
+    const address =
+      (base + word * 4) >>> 0;
+
+    const data = peekMemory(address);
+    const cell = document.createElement("div");
+
+    let accessClass = "";
+
+    if (address === currentMemoryAddress) {
+      accessClass =
+        currentMemoryOperation === "WRITE"
+          ? " last-write"
+          : " last-read";
+    }
+
+    cell.className =
+      `memory-word${accessClass}`;
+
+    cell.innerHTML = `
+      <small>Word ${word}</small>
+      <strong>${hex(address)}</strong>
+      <code>${hex(data)}</code>
+    `;
+
+    lineGrid.appendChild(cell);
+  }
+
+  const traceBody = $("memoryTraceBody");
+  traceBody.innerHTML = "";
+
+  const entries =
+    Array.from(memoryAccessInfo.entries())
+      .sort(
+        (a, b) =>
+          b[1].lastSequence -
+          a[1].lastSequence
+      );
+
+  if (entries.length === 0) {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td colspan="7">
+        尚无Memory访问；所有未写入地址的初始值均为0x00000000。
+      </td>
+    `;
+
+    traceBody.appendChild(row);
+    return;
+  }
+
+  for (const [address, info] of entries) {
+    const row = document.createElement("tr");
+
+    row.className =
+      info.lastOperation === "WRITE"
+        ? "memory-write-row"
+        : "memory-read-row";
+
+    row.innerHTML = `
+      <td>${info.lastSequence}</td>
+      <td>${hex(address)}</td>
+      <td>${hex(peekMemory(address))}</td>
+      <td>${info.lastOperation}</td>
+      <td>${info.lastSource}</td>
+      <td>${info.reads}</td>
+      <td>${info.writes}</td>
+    `;
+
+    traceBody.appendChild(row);
+  }
+}
+
   render();
 
   showResult(
@@ -1279,9 +1732,11 @@ function executeDwbInv() {
       );
 
       for (let word = 0; word < WORDS; word++) {
-        way.data[word] = memoryRead(
-          decoded.lineBase + word * 4
-        );
+way.data[word] = memoryRead(
+  decoded.lineBase + word * 4,
+  "D-Cache Refill"
+);
+
       }
 
       way.valid = true;
@@ -1354,7 +1809,12 @@ function executeDwbInv() {
  * 如果该Line是从Write-back模式遗留的Dirty Line，
  * 不能仅凭一次Word Write-through清除整条Line的Dirty。
  */
-memoryWrite(decoded.address, data);
+memoryWrite(
+  decoded.address,
+  data,
+  "CPU Write-through"
+);
+
 
 
             showResult(
@@ -1376,19 +1836,37 @@ memoryWrite(decoded.address, data);
           "miss"
         );
 
-        if (
-          operation === "write" &&
-          allocatePolicy === "nwa"
-        ) {
-          setSignals(1, 0, -1);
-          memoryWrite(decoded.address, data);
 
-          showResult(
-            "WRITE MISS + Non-write-allocate：" +
-            "只写DDR，不分配D-Cache Way。",
-            "miss"
-          );
-        } else {
+        if (
+  operation === "write" &&
+  allocatePolicy === "nwa"
+) {
+  /*
+   * Write Miss + Non-write-allocate：
+   * 不选择Way、不Refill、不修改D-Cache，
+   * 直接向DDR写入一个Word。
+   */
+  setSignals(1, 0, -1);
+
+  memoryWrite(
+    decoded.address,
+    data,
+    "CPU Non-write-allocate"
+  );
+
+  showResult(
+    "WRITE MISS + Non-write-allocate：" +
+    "只写DDR，不分配D-Cache Way。",
+    "miss"
+  );
+
+  log(
+    "Non-write-allocate：绕过D-Cache，直接写入DDR。",
+    "miss"
+  );
+}
+
+        else {
           const victim = chooseVictim(decoded.set);
           const victimWay =
             cache[decoded.set].ways[victim];
@@ -1413,9 +1891,21 @@ memoryWrite(decoded.address, data);
 
             if (writePolicy === "wb") {
               cache[decoded.set].ways[victim].dirty = true;
-            } else {
-              memoryWrite(decoded.address, data);
-            }
+} else {
+  /*
+   * Write-allocate + Write-through：
+   * Refill后更新目标Cache Word，
+   * 并将相同Store Data写入DDR。
+   */
+  cache[decoded.set].ways[victim].dirty = false;
+
+  memoryWrite(
+    decoded.address,
+    data,
+    "Write-allocate Write-through"
+  );
+}
+
           }
 
           setSignals(1, 1, victim);
@@ -1602,6 +2092,8 @@ $("victimValue").textContent =
       }
 
       renderSramRow(setIndex);
+      renderMemory();
+
     }
 
     function renderSramRow(setIndex) {
@@ -1640,7 +2132,32 @@ $("victimValue").textContent =
     }
 
     function updateDecode(decoded) {
-      currentWord = decoded.word;
+      currentSet = decoded.set;
+currentWord = decoded.word;
+
+/*
+ * “当前地址Set”自动跟随Address[10:5]。
+ */
+$("displaySet").value = decoded.set;
+
+/*
+ * Memory窗口在自动跟随模式下，跟随CPU地址所属Line。
+ * 这里只移动观察窗口，不会产生真正的Memory访问。
+ */
+if (
+  $("memoryFollowCpu") &&
+  $("memoryFollowCpu").checked
+) {
+  memoryViewBase =
+    (decoded.lineBase & 0xFFFFFFE0) >>> 0;
+
+  if ($("memoryViewAddress")) {
+    $("memoryViewAddress").value =
+      hex(decoded.address);
+  }
+}
+
+
 
       $("tagValue").textContent =
         hex(decoded.tag, 5);
@@ -1877,40 +2394,66 @@ function cycleStep() {
       break;
     }
 
-    case "HIT_WRITE": {
-      const way =
-        cache[decoded.set].ways[ctx.hitWay];
+case "HIT_WRITE": {
+  const way =
+    cache[decoded.set].ways[ctx.hitWay];
 
-      setSignals(1, 1, ctx.hitWay);
-      way.data[decoded.word] = request.data;
+  /*
+   * Data SRAM执行Write：
+   * ME=1、WE=1，由WEM选择命中的Way。
+   */
+  setSignals(1, 1, ctx.hitWay);
 
-      if (request.writePolicy === "wb") {
-        way.dirty = true;
+  way.data[decoded.word] =
+    request.data >>> 0;
 
-        ctx.message =
-          `Write Hit：更新Way ${ctx.hitWay}、Word ${decoded.word}，` +
-          "Write-back模式下Dirty置1。";
-      } else {
-        /*
-         * 不主动清除旧Dirty。
-         * 如果从Write-back模式切换而来，其他Word可能仍未同步。
-         */
-        memoryWrite(
-          request.address,
-          request.data
-        );
+  if (request.writePolicy === "wb") {
+    /*
+     * Write-back Hit：
+     * 只更新D-Cache，Memory暂时不变。
+     */
+    way.dirty = true;
 
-        ctx.message =
-          `Write Hit：更新Way ${ctx.hitWay}、Word ${decoded.word}，` +
-          "同时Write-through到DDR。";
-      }
+    ctx.message =
+      `Write Hit：更新Way ${ctx.hitWay}、` +
+      `Word ${decoded.word}，` +
+      "Write-back模式下Dirty置1。";
+  } else {
+    /*
+     * Write-through Hit：
+     * 同时更新D-Cache和DDR Memory。
+     *
+     * 注意：不能无条件清除旧Dirty。
+     */
+    memoryWrite(
+      request.address,
+      request.data,
+      "CPU Write-through"
+    );
 
-      touchWay(decoded.set, ctx.hitWay);
-      log(ctx.message, "hit");
+    ctx.message =
+      `Write Hit：更新Way ${ctx.hitWay}、` +
+      `Word ${decoded.word}，` +
+      "同时Write-through到DDR。";
+  }
 
-      ctx.state = "CPU_RESPONSE";
-      break;
-    }
+  /*
+   * Write Hit会更新True LRU。
+   */
+  touchWay(
+    decoded.set,
+    ctx.hitWay
+  );
+
+  log(
+    ctx.message,
+    "hit"
+  );
+
+  ctx.state = "CPU_RESPONSE";
+  break;
+}
+
 
     case "MISS_DETECT": {
       setSignals(0, 0, -1);
@@ -2007,7 +2550,12 @@ function cycleStep() {
 
       ctx.currentBeat = beat;
 
-      memoryWrite(address, data);
+memoryWrite(
+  address,
+  data,
+  "D-Cache Write-back"
+);
+
 
       ctx.message =
         `DDR W Beat ${beat}/7：` +
@@ -2056,7 +2604,11 @@ function cycleStep() {
       const address =
         (decoded.lineBase + word * 4) >>> 0;
 
-      const data = memoryRead(address);
+const data = memoryRead(
+  address,
+  "D-Cache Refill"
+);
+
 
       ctx.currentBeat = word;
       ctx.fillBuffer[word] = data;
@@ -2137,7 +2689,11 @@ function cycleStep() {
     case "METADATA_COMMIT": {
       const targetWay =
         cache[decoded.set].ways[ctx.victimWay];
-
+ /*
+   * 完整8个Word安装完成之后，
+   * 最后才提交Tag、Valid和Dirty。
+   */
+      
       targetWay.tag = decoded.tag;
       targetWay.valid = true;
 
@@ -2150,15 +2706,23 @@ function cycleStep() {
         targetWay.dirty = false;
       }
 
-      if (
-        request.operation === "write" &&
-        request.writePolicy === "wt"
-      ) {
-        memoryWrite(
-          request.address,
-          request.data
-        );
-      }
+if (
+  request.operation === "write" &&
+  request.writePolicy === "wt"
+) {
+  /*
+   * Write-allocate + Write-through：
+   *
+   * Refill和Data SRAM Install已经完成，
+   * 这里将Store Data同步到DDR Memory。
+   */
+  memoryWrite(
+    request.address,
+    request.data,
+    "Write-allocate Write-through"
+  );
+}
+
 
       touchWay(
         decoded.set,
@@ -2190,21 +2754,28 @@ function cycleStep() {
       break;
     }
 
-    case "NWA_W": {
-      setSignals(0, 0, -1);
+case "NWA_W": {
+  /*
+   * 此状态表示DDR W数据阶段。
+   * 因为是Non-write-allocate，所以不会更新Data SRAM。
+   */
+  setSignals(0, 0, -1);
 
-      memoryWrite(
-        request.address,
-        request.data
-      );
+  memoryWrite(
+    request.address,
+    request.data,
+    "CPU Non-write-allocate"
+  );
 
-      ctx.message =
-        `DDR W：${hex(request.address)} ← ` +
-        `${hex(request.data)}；D-Cache不分配Way。`;
+  ctx.message =
+    `DDR W：${hex(request.address)} ← ` +
+    `${hex(request.data)}；` +
+    "D-Cache不分配Way。";
 
-      ctx.state = "NWA_B";
-      break;
-    }
+  ctx.state = "NWA_B";
+  break;
+}
+
 
     case "NWA_B": {
       ctx.message =
@@ -2611,10 +3182,7 @@ function cycleAbort() {
       resetCache
     );
 
-    $("displaySet").addEventListener(
-      "input",
-      render
-    );
+
 
     $("address").addEventListener("input", () => {
       try {
@@ -2666,7 +3234,144 @@ $("cycleAbortBtn").addEventListener(
   cycleAbort
 );
 
-    resetCache();
+    $("memoryJumpBtn").addEventListener(
+  "click",
+  () => {
+    try {
+      const address =
+        parseHex($("memoryViewAddress").value);
+
+      memoryViewBase =
+        (address & 0xFFFFFFE0) >>> 0;
+
+      /*
+       * 手动跳转后暂时关闭自动跟随，
+       * 方便查看其他Memory Line。
+       */
+      $("memoryFollowCpu").checked = false;
+
+      renderMemory();
+    } catch (error) {
+      showResult(
+        error.message,
+        "miss"
+      );
+    }
+  }
+);
+
+$("memoryViewAddress").addEventListener(
+  "change",
+  () => {
+    try {
+      const address =
+        parseHex($("memoryViewAddress").value);
+
+      memoryViewBase =
+        (address & 0xFFFFFFE0) >>> 0;
+
+      renderMemory();
+    } catch (error) {
+      showResult(
+        error.message,
+        "miss"
+      );
+    }
+  }
+);
+
+$("memoryFollowCpu").addEventListener(
+  "change",
+  () => {
+    if ($("memoryFollowCpu").checked) {
+      try {
+        const address =
+          parseHex($("address").value);
+
+        memoryViewBase =
+          (address & 0xFFFFFFE0) >>> 0;
+
+        $("memoryViewAddress").value =
+          hex(address);
+      } catch {
+        // 保留当前Memory观察窗口。
+      }
+    }
+
+    renderMemory();
+  }
+);
+
+$("memoryClearTraceBtn").addEventListener(
+  "click",
+  () => {
+    memoryAccessInfo = new Map();
+    memoryAccessSequence = 0;
+
+    currentMemoryAddress = null;
+    currentMemoryOperation = "—";
+    currentMemorySource = "—";
+
+    renderMemory();
+
+    log(
+      "Memory访问记录已清除；Memory数据保持不变。",
+      "meta"
+    );
+  }
+);
+
+$("powerOnResetBtn").addEventListener(
+  "click",
+  powerOnReset
+);
+
+    function powerOnReset() {
+  pause();
+  cyclePause();
+
+  /*
+   * 稀疏Memory模型：
+   * 清空Map代表整个Memory恢复为全0。
+   */
+  memory = new Map();
+
+  memoryAccessInfo = new Map();
+  memoryAccessSequence = 0;
+
+  currentMemoryAddress = null;
+  currentMemoryOperation = "—";
+  currentMemorySource = "—";
+
+  memoryViewBase = 0x60000000;
+
+  if ($("memoryViewAddress")) {
+    $("memoryViewAddress").value =
+      "0x60000000";
+  }
+
+  /*
+   * Memory上电复位时同时清除Cache，
+   * 避免Cache继续保留Memory复位前的旧数据。
+   */
+  resetCache();
+
+  showResult(
+    "系统上电复位完成：Memory全0，Cache全部Invalid。",
+    "info"
+  );
+
+  log(
+    "Power-on Reset：DDR Memory恢复全0，D-Cache全部Invalid。",
+    "meta"
+  );
+
+  renderMemory();
+}
+
+resetCache();
+renderMemory();
+
   </script>
 </body>
 </html>
