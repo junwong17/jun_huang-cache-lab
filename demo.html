@@ -976,6 +976,129 @@
     .recent-grid { grid-template-columns: repeat(4, 1fr); }
   }
 </style>
+  <!-- =========================================================
+     V0.2 布局覆盖块 R4
+     1) 消除条目之间的大空隙   2) 超宽屏自动放大以填满空间
+     3) 纵向压缩，让全部模块一屏显示
+     完全回退：把本 <style>...</style> 整块删除即可
+     ========================================================= -->
+<style>
+  /* ---------- 1. 条目靠左紧凑：空隙只由 gap 决定 ---------- */
+  .control-grid,
+  .stat-grid,
+  .decode-grid,
+  .transaction-grid,
+  .fill-buffer-grid,
+  .memory-grid,
+  .recent-grid {
+    justify-content: start;
+    gap: 4px;
+  }
+
+  .decode-grid,
+  .transaction-grid,
+  .fill-buffer-grid,
+  .memory-grid,
+  .recent-grid {
+    gap: 3px;
+  }
+
+  /* ---------- 2. 纵向压缩：面板与标题 ---------- */
+  .panel { padding: 6px; }
+  .panel h2 { margin: 0 0 4px; font-size: 15px; }
+  .panel h3 { margin: 4px 0 3px; font-size: 13px; }
+
+  .grid2 { gap: 6px; margin-bottom: 6px; }
+
+  /* ---------- 3. 纵向压缩：格子高度 ---------- */
+  .stat { min-height: 42px; padding: 3px 4px; }
+  .decode-item { min-height: 42px; padding: 3px 4px; }
+  .transaction-item { min-height: 40px; padding: 3px 4px; }
+  .fill-buffer-word { min-height: 58px; padding: 3px 2px; }
+  .memory-word { min-height: 46px; padding: 3px 2px; }
+  .recent-word { min-height: 56px; padding: 3px 2px; }
+
+  .data-path { min-height: 116px; padding: 6px 4px; }
+  .path-node { min-height: 70px; padding: 6px 4px; }
+
+  /* ---------- 4. 纵向压缩：日志 / 状态栏 / 表格 ---------- */
+  .event-log {
+    min-height: 138px;
+    padding: 6px;
+    line-height: 1.45;
+  }
+
+  .status-bar { min-height: 26px; margin-top: 4px; padding: 4px 8px; }
+  .progress-shell { margin-top: 4px; }
+  .button-row { margin-top: 4px; }
+  .transaction-layout { margin-top: 6px; gap: 6px; }
+
+  th,
+  td { padding: 4px 5px; }
+
+  /* ---------- 5. 超宽屏：字号抬档，用内容自然填满行尾 ---------- */
+  @media (min-width: 2200px) {
+    .subtitle,
+    .badge,
+    .header-link,
+    label,
+    input,
+    select,
+    button,
+    .status-bar,
+    .event-log { font-size: 13px; }
+
+    .stat small,
+    .decode-item small,
+    .transaction-item small,
+    .fill-buffer-word small,
+    .memory-word small,
+    .recent-word small,
+    .word-address { font-size: 12px; }
+
+    .stat strong { font-size: 18px; }
+    .decode-item strong { font-size: 16px; }
+    .transaction-item strong { font-size: 14px; }
+    .word-value { font-size: 13px; }
+
+    .fill-buffer-word strong,
+    .fill-buffer-word code,
+    .memory-word strong,
+    .memory-word code,
+    .recent-word strong,
+    .recent-word code { font-size: 13px; }
+
+    .path-node strong { font-size: 16px; }
+    .path-node span { font-size: 13px; }
+
+    /* 字号放大后，格子同步长高，视觉更饱满 */
+    .stat { min-height: 46px; }
+    .decode-item { min-height: 46px; }
+    .fill-buffer-word { min-height: 64px; }
+    .memory-word { min-height: 52px; }
+    .recent-word { min-height: 62px; }
+    .path-node { min-height: 76px; }
+  }
+
+  /* ---------- 6. 窄屏回退（自适应，不绑定分辨率） ---------- */
+  @media (max-width: 1280px) {
+    .control-grid { grid-template-columns: repeat(4, 1fr); }
+    .control-grid input,
+    .control-grid select { max-width: none; }
+  }
+
+  @media (max-width: 900px) {
+    .control-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-grid { grid-template-columns: repeat(3, 1fr); }
+    .decode-grid { grid-template-columns: repeat(3, 1fr); }
+    .transaction-grid { grid-template-columns: repeat(2, 1fr); }
+    .fill-buffer-grid { grid-template-columns: repeat(4, 1fr); }
+    .memory-grid,
+    .recent-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+
 </head>
 
 
