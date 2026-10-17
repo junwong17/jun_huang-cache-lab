@@ -198,6 +198,14 @@
     cursor: not-allowed;
   }
 
+  /* V0.2 微调：控制区输入框不再无限拉伸 */
+  .control-grid input,
+  .control-grid select {
+    width: 100%;
+    max-width: 164px;
+  }
+
+
   /* 关键：flex-end 防止按钮被拉伸成与"动画速度"标签同高 */
   .button-row {
     display: flex;
@@ -256,9 +264,11 @@
   /* ========= 运行统计：全站唯一一处定义，9 列 ========= */
   .stat-grid {
     display: grid;
-    grid-template-columns: repeat(9, minmax(88px, 1fr));
+    grid-template-columns: repeat(9, minmax(96px, max-content));
+    justify-content: space-between;
     gap: 5px;
   }
+
 
   .stat {
     min-height: 48px;
@@ -291,9 +301,11 @@
   /* ================= 地址分解 ================= */
   .decode-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(104px, max-content));
+    justify-content: space-between;
     gap: 4px;
   }
+
 
   .decode-item {
     min-height: 46px;
@@ -420,12 +432,12 @@
   }
 
   table {
-    width: 100%;
+    width: auto;
     min-width: 1280px;
     border-collapse: collapse;
-    table-layout: fixed;
     font-size: var(--fs-label);
   }
+
 
   th,
   td {
@@ -485,10 +497,12 @@
   }
 
   /* ========== Memory Line / 最近 8 笔 DDR 事务 ========== */
+
   .memory-grid,
   .recent-grid {
     display: grid;
-    grid-template-columns: repeat(8, minmax(80px, 1fr));
+    grid-template-columns: repeat(8, minmax(88px, max-content));
+    justify-content: space-between;
     gap: 4px;
   }
 
@@ -635,9 +649,11 @@
 
   .transaction-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(84px, 1fr));
+    grid-template-columns: repeat(4, minmax(104px, max-content));
+    justify-content: space-between;
     gap: 4px;
   }
+
 
   .transaction-item {
     min-height: 42px;
@@ -672,9 +688,11 @@
 
   .fill-buffer-grid {
     display: grid;
-    grid-template-columns: repeat(8, minmax(66px, 1fr));
+    grid-template-columns: repeat(8, minmax(88px, max-content));
+    justify-content: space-between;
     gap: 4px;
   }
+
 
   .fill-buffer-word {
     min-height: 74px;
@@ -753,11 +771,9 @@
   }
 
   /* ==================== 响应式（统一为 3 档） ==================== */
-  @media (max-width: 1439px) {
-    .control-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
+  /* ==================== 响应式 ==================== */
+  /* 宽屏：条目贴合文字；窄屏：切回 1fr 填满，避免横向溢出 */
+  @media (max-width: 1760px) {
     .stat-grid {
       grid-template-columns: repeat(5, 1fr);
     }
@@ -812,6 +828,57 @@
       grid-template-columns: repeat(4, 1fr);
     }
   }
+  /* ============ V0.2 微调：条目最大宽度封顶（防长文本撑爆整行） ============ */
+  .stat,
+  .decode-item {
+    max-width: 168px;
+  }
+
+  .transaction-item {
+    max-width: 200px;
+  }
+
+  .fill-buffer-word,
+  .memory-word {
+    max-width: 140px;
+  }
+
+  .recent-word {
+    max-width: 150px;
+  }
+  /* ============ V0.2 微调：超宽屏字号抬档 ============ */
+  @media (min-width: 2400px) {
+    :root {
+      --fs-label: 13px;
+      --fs-data: 15px;
+    }
+
+    .stat strong {
+      font-size: 18px;
+    }
+
+    .decode-item strong {
+      font-size: 16px;
+    }
+
+    .transaction-item small,
+    .fill-buffer-word small,
+    .memory-word small,
+    .recent-word small {
+      font-size: 12px;
+    }
+
+    .transaction-item strong,
+    .fill-buffer-word strong,
+    .fill-buffer-word code,
+    .memory-word strong,
+    .memory-word code,
+    .recent-word strong,
+    .recent-word code {
+      font-size: 13px;
+    }
+  }
+
 </style>
 
 </head>
