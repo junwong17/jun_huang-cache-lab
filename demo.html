@@ -813,7 +813,171 @@
   }
 </style>
 
+<!-- =========================================================
+     V0.2 布局覆盖块 R3
+     只做视觉调整，不改任何 JS / ID / class 名
+     完全回退方法：把本 <style>...</style> 整块删除即可
+     ========================================================= -->
+<style>
+  /* ---------- 1. 页面用满整个宽度，消除左右留白 ---------- */
+  .header-main { width: 100%; }
+
+  main {
+    width: calc(100% - 12px);
+    margin: 6px auto 10px;
+  }
+
+  .panel { padding: 8px; }
+
+  /* ---------- 2. 字号阶梯：全站不再出现 8 / 9 / 10px ---------- */
+  .subtitle,
+  .badge,
+  .header-link,
+  label,
+  input,
+  select,
+  button,
+  .status-bar,
+  .event-log { font-size: 12px; }
+
+  .panel h2 { font-size: 16px; }
+  .panel h3 { font-size: 14px; }
+
+  .stat small,
+  .decode-item small,
+  .transaction-item small,
+  .fill-buffer-word small,
+  .memory-word small,
+  .recent-word small,
+  .recent-word span,
+  .word-address { font-size: 11px; }
+
+  .stat strong { font-size: 16px; }
+  .decode-item strong { font-size: 14px; }
+  .transaction-item strong { font-size: 13px; }
+  .word-value { font-size: 12px; }
+
+  .fill-buffer-word strong,
+  .fill-buffer-word code,
+  .memory-word strong,
+  .memory-word code,
+  .recent-word strong,
+  .recent-word code { font-size: 12px; }
+
+  .path-node strong { font-size: 15px; }
+  .path-node span { font-size: 12px; }
+  footer { font-size: 11px; }
+
+  /* ---------- 3. 条目贴合文字宽度，剩余空间均摊为间距 ---------- */
+  .control-grid {
+    grid-template-columns: repeat(7, minmax(112px, max-content));
+    justify-content: space-between;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(9, minmax(96px, max-content));
+    justify-content: space-between;
+  }
+
+  .decode-grid {
+    grid-template-columns: repeat(7, minmax(104px, max-content));
+    justify-content: space-between;
+  }
+
+  .transaction-grid {
+    grid-template-columns: repeat(4, minmax(104px, max-content));
+    justify-content: space-between;
+  }
+
+  .fill-buffer-grid {
+    grid-template-columns: repeat(8, minmax(88px, max-content));
+    justify-content: space-between;
+  }
+
+  .memory-grid,
+  .recent-grid {
+    grid-template-columns: repeat(8, minmax(90px, max-content));
+    justify-content: space-between;
+  }
+
+  /* ---------- 4. 控制区输入框不再被拉伸 ---------- */
+  .control-grid input,
+  .control-grid select {
+    width: 100%;
+    max-width: 168px;
+  }
+
+  /* ---------- 5. 条目最大宽度封顶，防长文本撑爆整行 ---------- */
+  .stat,
+  .decode-item { max-width: 170px; }
+
+  .transaction-item { max-width: 210px; }
+
+  .fill-buffer-word,
+  .memory-word { max-width: 145px; }
+
+  .recent-word { max-width: 155px; }
+
+  /* ---------- 6. 长文本不再被省略号截断 ---------- */
+  .transaction-item strong {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-all;
+  }
+
+  /* ---------- 7. 紧凑化：减少格子高度 ---------- */
+  .stat { min-height: 48px; }
+  .decode-item { min-height: 46px; }
+  .transaction-item { min-height: 44px; }
+
+  /* ---------- 8. 窄屏回退（保证不横向溢出） ---------- */
+  @media (max-width: 1800px) {
+    /* 统计区在半宽面板里，9 个内容型条目太挤，退回填充 */
+    .stat-grid {
+      grid-template-columns: repeat(9, 1fr);
+      justify-content: start;
+    }
+
+    .stat { max-width: none; }
+  }
+
+  @media (max-width: 1500px) {
+    .decode-grid,
+    .memory-grid,
+    .recent-grid { justify-content: start; }
+
+    .decode-grid { grid-template-columns: repeat(7, 1fr); }
+    .memory-grid,
+    .recent-grid { grid-template-columns: repeat(8, 1fr); }
+
+    .decode-item,
+    .memory-word,
+    .recent-word { max-width: none; }
+  }
+
+  @media (max-width: 1280px) {
+    .control-grid {
+      grid-template-columns: repeat(4, 1fr);
+      justify-content: start;
+    }
+
+    .control-grid input,
+    .control-grid select { max-width: none; }
+  }
+
+  @media (max-width: 900px) {
+    .control-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-grid { grid-template-columns: repeat(3, 1fr); }
+    .decode-grid { grid-template-columns: repeat(3, 1fr); }
+    .transaction-grid { grid-template-columns: repeat(2, 1fr); }
+    .fill-buffer-grid { grid-template-columns: repeat(4, 1fr); }
+    .memory-grid,
+    .recent-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
 </head>
+
 
 <body>
   <header>
