@@ -158,8 +158,7 @@
 
   .control-grid {
     display: grid;
-    grid-template-columns: repeat(7, minmax(112px, max-content));
-    justify-content: space-between;
+    grid-template-columns: repeat(7, minmax(98px, 1fr));
     gap: 5px;
   }
 
@@ -197,14 +196,6 @@
     opacity: 0.45;
     cursor: not-allowed;
   }
-
-  /* V0.2 微调：控制区输入框不再无限拉伸 */
-  .control-grid input,
-  .control-grid select {
-    width: 100%;
-    max-width: 164px;
-  }
-
 
   /* 关键：flex-end 防止按钮被拉伸成与"动画速度"标签同高 */
   .button-row {
@@ -264,11 +255,9 @@
   /* ========= 运行统计：全站唯一一处定义，9 列 ========= */
   .stat-grid {
     display: grid;
-    grid-template-columns: repeat(9, minmax(96px, max-content));
-    justify-content: space-between;
+    grid-template-columns: repeat(9, minmax(88px, 1fr));
     gap: 5px;
   }
-
 
   .stat {
     min-height: 48px;
@@ -301,11 +290,9 @@
   /* ================= 地址分解 ================= */
   .decode-grid {
     display: grid;
-    grid-template-columns: repeat(7, minmax(104px, max-content));
-    justify-content: space-between;
+    grid-template-columns: repeat(7, 1fr);
     gap: 4px;
   }
-
 
   .decode-item {
     min-height: 46px;
@@ -432,12 +419,12 @@
   }
 
   table {
-    width: auto;
+    width: 100%;
     min-width: 1280px;
     border-collapse: collapse;
+    table-layout: fixed;
     font-size: var(--fs-label);
   }
-
 
   th,
   td {
@@ -497,12 +484,10 @@
   }
 
   /* ========== Memory Line / 最近 8 笔 DDR 事务 ========== */
-
   .memory-grid,
   .recent-grid {
     display: grid;
-    grid-template-columns: repeat(8, minmax(88px, max-content));
-    justify-content: space-between;
+    grid-template-columns: repeat(8, minmax(80px, 1fr));
     gap: 4px;
   }
 
@@ -649,11 +634,9 @@
 
   .transaction-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(104px, max-content));
-    justify-content: space-between;
+    grid-template-columns: repeat(4, minmax(84px, 1fr));
     gap: 4px;
   }
-
 
   .transaction-item {
     min-height: 42px;
@@ -688,11 +671,9 @@
 
   .fill-buffer-grid {
     display: grid;
-    grid-template-columns: repeat(8, minmax(88px, max-content));
-    justify-content: space-between;
+    grid-template-columns: repeat(8, minmax(66px, 1fr));
     gap: 4px;
   }
-
 
   .fill-buffer-word {
     min-height: 74px;
@@ -771,9 +752,11 @@
   }
 
   /* ==================== 响应式（统一为 3 档） ==================== */
-  /* ==================== 响应式 ==================== */
-  /* 宽屏：条目贴合文字；窄屏：切回 1fr 填满，避免横向溢出 */
-  @media (max-width: 1760px) {
+  @media (max-width: 1439px) {
+    .control-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
     .stat-grid {
       grid-template-columns: repeat(5, 1fr);
     }
@@ -828,57 +811,6 @@
       grid-template-columns: repeat(4, 1fr);
     }
   }
-  /* ============ V0.2 微调：条目最大宽度封顶（防长文本撑爆整行） ============ */
-  .stat,
-  .decode-item {
-    max-width: 168px;
-  }
-
-  .transaction-item {
-    max-width: 200px;
-  }
-
-  .fill-buffer-word,
-  .memory-word {
-    max-width: 140px;
-  }
-
-  .recent-word {
-    max-width: 150px;
-  }
-  /* ============ V0.2 微调：超宽屏字号抬档 ============ */
-  @media (min-width: 2400px) {
-    :root {
-      --fs-label: 13px;
-      --fs-data: 15px;
-    }
-
-    .stat strong {
-      font-size: 18px;
-    }
-
-    .decode-item strong {
-      font-size: 16px;
-    }
-
-    .transaction-item small,
-    .fill-buffer-word small,
-    .memory-word small,
-    .recent-word small {
-      font-size: 12px;
-    }
-
-    .transaction-item strong,
-    .fill-buffer-word strong,
-    .fill-buffer-word code,
-    .memory-word strong,
-    .memory-word code,
-    .recent-word strong,
-    .recent-word code {
-      font-size: 13px;
-    }
-  }
-
 </style>
 
 </head>
@@ -1066,4 +998,2176 @@
           <div class="decode-item">
             <small>Word [4:2]</small>
             <strong id="decodeWord">0</strong>
-[...]
+          </div>
+
+          <div class="decode-item">
+            <small>Byte [1:0]</small>
+            <strong id="decodeByte">0</strong>
+          </div>
+
+          <div class="decode-item">
+            <small>Write Data</small>
+            <strong id="decodeWriteData">—</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>3. 运行统计</h2>
+<div class="stat-grid">
+  <div class="stat">
+    <small>已发出请求</small>
+    <strong id="statIssued">0</strong>
+  </div>
+
+  <div class="stat">
+    <small>已完成请求</small>
+    <strong id="statCompleted">0</strong>
+  </div>
+
+  <div class="stat">
+    <small>Cache Hit</small>
+    <strong id="statHit">0</strong>
+  </div>
+
+  <div class="stat">
+    <small>Cache Miss</small>
+    <strong id="statMiss">0</strong>
+  </div>
+
+  <div class="stat">
+    <small>Hit Rate</small>
+    <strong id="statHitRate">0.00%</strong>
+  </div>
+
+  <div class="stat">
+    <small>DDR Read Word</small>
+    <strong id="statDdrRead">0</strong>
+  </div>
+
+  <div class="stat">
+    <small>DDR Write Word</small>
+    <strong id="statDdrWrite">0</strong>
+  </div>
+
+  <div class="stat">
+    <small>Write-back Line</small>
+    <strong id="statWriteback">0</strong>
+  </div>
+
+  <div class="stat">
+    <small>队列进度</small>
+    <strong id="statProgress">0 / 0</strong>
+  </div>
+</div>
+
+  
+      </div>
+    </section>
+
+    <section class="panel" style="margin-bottom:8px;">
+      <h2>4. CPU → D-Cache → DDR 动态数据路径</h2>
+
+      <div class="data-path">
+        <div id="nodeCpu" class="path-node">
+          <strong>CPU</strong>
+          <span id="nodeCpuText">
+            等待请求
+          </span>
+        </div>
+
+        <div id="arrow1" class="path-arrow">→</div>
+
+        <div id="nodeDecode" class="path-node">
+          <strong>Address Decode</strong>
+          <span id="nodeDecodeText">
+            Tag / Set / Word
+          </span>
+        </div>
+
+        <div id="arrow2" class="path-arrow">→</div>
+
+        <div id="nodeCache" class="path-node">
+          <strong>4-Way D-Cache</strong>
+          <span id="nodeCacheText">
+            等待Tag比较
+          </span>
+        </div>
+
+        <div id="arrow3" class="path-arrow">↔</div>
+
+        <div id="nodeFill" class="path-node">
+          <strong>Line Fill Buffer</strong>
+          <span id="nodeFillText">
+            8 × 32-bit
+          </span>
+        </div>
+
+        <div id="arrow4" class="path-arrow">↔</div>
+
+        <div id="nodeDdr" class="path-node">
+          <strong>DDR Memory</strong>
+          <span id="nodeDdrText">
+            Sparse Zero Memory
+          </span>
+        </div>
+      </div>
+      <div class="transaction-layout">
+  <div class="transaction-status">
+    <h3>当前事务状态</h3>
+
+    <div class="transaction-grid">
+      <div class="transaction-item">
+        <small>Request State</small>
+        <strong id="txState">IDLE</strong>
+      </div>
+
+      <div class="transaction-item">
+        <small>Hit Way</small>
+        <strong id="txHitWay">—</strong>
+      </div>
+
+      <div class="transaction-item">
+        <small>Victim Way</small>
+        <strong id="txVictimWay">—</strong>
+      </div>
+
+      <div class="transaction-item">
+        <small>Current Beat</small>
+        <strong id="txBeat">—</strong>
+      </div>
+
+      <div class="transaction-item">
+        <small>Line Valid [7:0]</small>
+        <strong id="txLineValid">00000000</strong>
+      </div>
+
+      <div class="transaction-item">
+        <small>DDR Operation</small>
+        <strong id="txDdrOperation">IDLE</strong>
+      </div>
+
+      <div class="transaction-item">
+        <small>DDR Address</small>
+        <strong id="txDdrAddress">—</strong>
+      </div>
+
+      <div class="transaction-item">
+        <small>DDR Data / LAST</small>
+        <strong id="txDdrData">— / 0</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="fill-buffer-panel">
+    <h3>Line Fill Buffer：8 × 32-bit</h3>
+
+    <div
+      id="fillBufferGrid"
+      class="fill-buffer-grid"
+    ></div>
+  </div>
+</div>
+
+    </section>
+
+    <section class="panel" style="margin-bottom:8px;">
+      <h2>
+        5. 当前Set完整Cache数据
+        <span id="currentSetLabel" class="badge">
+          Set 0
+        </span>
+      </h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Way</th>
+              <th>V</th>
+              <th>D</th>
+              <th>Tag</th>
+              <th>Rank</th>
+              <th>Word 0</th>
+              <th>Word 1</th>
+              <th>Word 2</th>
+              <th>Word 3</th>
+              <th>Word 4</th>
+              <th>Word 5</th>
+              <th>Word 6</th>
+              <th>Word 7</th>
+            </tr>
+          </thead>
+
+          <tbody id="cacheBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid2">
+      <div class="panel">
+        <h2>6. 当前32-byte Memory Line</h2>
+
+        <div id="memoryLine" class="memory-grid"></div>
+
+        <h3>最近8笔DDR Word事务</h3>
+
+        <div id="recentMemory" class="recent-grid"></div>
+      </div>
+
+      <div class="panel">
+        <h2>7. 动画事务日志</h2>
+
+        <div id="eventLog" class="event-log"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    KR4 CPU Cache Memory Animation Demo ·
+    32-bit RISC-V · 8 KB D-Cache · True LRU
+  </footer>
+
+<script>
+  "use strict";
+
+  const SETS = 64;
+  const WAYS = 4;
+  const WORDS = 8;
+
+  const $ = (id) =>
+    document.getElementById(id);
+
+  function hex(value, digits = 8) {
+    return (
+      "0x" +
+      (value >>> 0)
+        .toString(16)
+        .toUpperCase()
+        .padStart(digits, "0")
+    );
+  }
+
+  function parseNumber(text, name) {
+    const value = Number(text);
+
+    if (
+      !Number.isFinite(value) ||
+      value < 0 ||
+      value > 0xFFFFFFFF
+    ) {
+      throw new Error(
+        `${name}不是有效的32-bit数值。`
+      );
+    }
+
+    return value >>> 0;
+  }
+
+  function decodeAddress(address) {
+    return {
+      address: address >>> 0,
+      tag: address >>> 11,
+      set: (address >>> 5) & 0x3F,
+      word: (address >>> 2) & 0x7,
+      byte: address & 0x3,
+      lineBase:
+        (address & 0xFFFFFFE0) >>> 0
+    };
+  }
+
+  function lineBaseFromTag(tag, setIndex) {
+    return (
+      (
+        (tag * 2048) +
+        ((setIndex & 0x3F) * 32)
+      ) >>> 0
+    );
+  }
+
+  function createWay() {
+    return {
+      valid: false,
+      dirty: false,
+      tag: 0,
+      data: new Array(WORDS).fill(0)
+    };
+  }
+
+  function createCache() {
+    return Array.from(
+      { length: SETS },
+      () => ({
+        ways: Array.from(
+          { length: WAYS },
+          createWay
+        ),
+
+        /*
+         * Rank 0 = MRU
+         * Rank 3 = LRU
+         *
+         * 初始优先顺序：
+         * Way3 → Way0 → Way1 → Way2
+         */
+        ranks: [1, 2, 3, 0]
+      })
+    );
+  }
+
+  function createFillBuffer() {
+    return {
+      data: new Array(WORDS).fill(0),
+      address: new Array(WORDS).fill(0),
+      valid: new Array(WORDS).fill(false),
+      currentBeat: -1,
+      last: false,
+      lineBase: 0
+    };
+  }
+
+  function createDdrState() {
+    return {
+      operation: "IDLE",
+      address: 0,
+      data: 0,
+      beat: -1,
+      last: false,
+      source: "—"
+    };
+  }
+
+  let cache;
+  let memory;
+  let memoryEvents;
+  let operations;
+
+  let operationIndex;
+  let currentOperation;
+  let currentDecode;
+  let currentContext;
+
+  let phasePlan;
+  let phaseIndex;
+
+  let running;
+  let paused;
+  let timer;
+
+  let highlightedWay;
+  let memoryViewBase;
+  let eventSequence;
+
+  let fillBuffer;
+  let ddrState;
+  let requestState;
+
+  let stats;
+
+  function resetModel() {
+    clearTimeout(timer);
+
+    cache = createCache();
+    memory = new Map();
+    memoryEvents = [];
+    operations = [];
+
+    operationIndex = 0;
+    currentOperation = null;
+    currentDecode = decodeAddress(0);
+    currentContext = null;
+
+    phasePlan = [];
+    phaseIndex = 0;
+
+    running = false;
+    paused = false;
+    timer = null;
+
+    highlightedWay = -1;
+    memoryViewBase = 0x60000000;
+    eventSequence = 0;
+
+    fillBuffer = createFillBuffer();
+    fillBuffer.lineBase = memoryViewBase;
+
+    ddrState = createDdrState();
+    requestState = "IDLE";
+
+    stats = {
+      issued: 0,
+      completed: 0,
+      hit: 0,
+      miss: 0,
+      ddrRead: 0,
+      ddrWrite: 0,
+      writeback: 0
+    };
+
+    $("eventLog").innerHTML = "";
+
+    clearPath();
+    renderAll();
+
+    $("runStatus").textContent =
+      "等待开始运行。";
+  }
+
+  function resetFillBuffer(lineBase = 0) {
+    fillBuffer = createFillBuffer();
+    fillBuffer.lineBase = lineBase >>> 0;
+  }
+
+  function setDdrIdle() {
+    ddrState = createDdrState();
+  }
+
+  function peekMemory(address) {
+    const aligned =
+      (address & 0xFFFFFFFC) >>> 0;
+
+    return memory.has(aligned)
+      ? memory.get(aligned) >>> 0
+      : 0;
+  }
+
+  function recordMemoryEvent(
+    operation,
+    address,
+    oldValue,
+    value,
+    source,
+    beat,
+    last
+  ) {
+    eventSequence++;
+
+    memoryEvents.push({
+      id: eventSequence,
+      operation,
+      address: address >>> 0,
+      oldValue: oldValue >>> 0,
+      value: value >>> 0,
+      source,
+      beat,
+      last
+    });
+
+    if (memoryEvents.length > 512) {
+      memoryEvents.shift();
+    }
+  }
+
+  function memoryRead(
+    address,
+    source,
+    beat = 0,
+    last = false
+  ) {
+    const value =
+      peekMemory(address);
+
+    stats.ddrRead++;
+
+    recordMemoryEvent(
+      "READ",
+      address,
+      value,
+      value,
+      source,
+      beat,
+      last
+    );
+
+    ddrState = {
+      operation: "READ",
+      address: address >>> 0,
+      data: value >>> 0,
+      beat,
+      last,
+      source
+    };
+
+    return value;
+  }
+
+  function memoryWrite(
+    address,
+    value,
+    source,
+    beat = 0,
+    last = false
+  ) {
+    const aligned =
+      (address & 0xFFFFFFFC) >>> 0;
+
+    const oldValue =
+      peekMemory(aligned);
+
+    memory.set(
+      aligned,
+      value >>> 0
+    );
+
+    stats.ddrWrite++;
+
+    recordMemoryEvent(
+      "WRITE",
+      aligned,
+      oldValue,
+      value,
+      source,
+      beat,
+      last
+    );
+
+    ddrState = {
+      operation: "WRITE",
+      address: aligned,
+      data: value >>> 0,
+      beat,
+      last,
+      source
+    };
+  }
+
+  function touchWay(setIndex, wayIndex) {
+    const ranks =
+      cache[setIndex].ranks;
+
+    const oldRank =
+      ranks[wayIndex];
+
+    for (
+      let index = 0;
+      index < WAYS;
+      index++
+    ) {
+      if (
+        index !== wayIndex &&
+        ranks[index] < oldRank
+      ) {
+        ranks[index]++;
+      }
+    }
+
+    ranks[wayIndex] = 0;
+  }
+
+  function findHitWay(setIndex, tag) {
+    for (
+      let wayIndex = 0;
+      wayIndex < WAYS;
+      wayIndex++
+    ) {
+      const way =
+        cache[setIndex].ways[wayIndex];
+
+      if (
+        way.valid &&
+        way.tag === tag
+      ) {
+        return wayIndex;
+      }
+    }
+
+    return -1;
+  }
+
+  function chooseVictim(setIndex) {
+    /*
+     * 优先选择Invalid Way。
+     * 从Way3向Way0寻找，与dcache.html首次安装Way3一致。
+     */
+    for (
+      let wayIndex = WAYS - 1;
+      wayIndex >= 0;
+      wayIndex--
+    ) {
+      if (
+        !cache[setIndex]
+          .ways[wayIndex]
+          .valid
+      ) {
+        return wayIndex;
+      }
+    }
+
+    return cache[setIndex]
+      .ranks
+      .indexOf(3);
+  }
+
+  function buildOperations() {
+    const start =
+      parseNumber(
+        $("startAddress").value.trim(),
+        "起始地址"
+      );
+
+    const end =
+      parseNumber(
+        $("endAddress").value.trim(),
+        "终止地址"
+      );
+
+    const step =
+      Number($("addressStep").value);
+
+    const mode =
+      $("accessMode").value;
+
+    const writeBase =
+      parseNumber(
+        $("writeDataBase").value.trim(),
+        "Write Data起始值"
+      );
+
+    if ((start & 0x3) !== 0) {
+      throw new Error(
+        "起始地址必须4-byte对齐。"
+      );
+    }
+
+    if ((end & 0x3) !== 0) {
+      throw new Error(
+        "终止地址必须4-byte对齐。"
+      );
+    }
+
+    if (
+      !Number.isInteger(step) ||
+      step <= 0 ||
+      (step & 0x3) !== 0
+    ) {
+      throw new Error(
+        "地址步进必须为正数，并且必须4-byte对齐。"
+      );
+    }
+
+    if (end < start) {
+      throw new Error(
+        "终止地址不能小于起始地址。"
+      );
+    }
+
+    const count =
+      Math.floor(
+        (end - start) / step
+      ) + 1;
+
+    if (count > 4096) {
+      throw new Error(
+        "一次最多生成4096个CPU请求。"
+      );
+    }
+
+    const list = [];
+
+    for (
+      let index = 0;
+      index < count;
+      index++
+    ) {
+      const address =
+        (start + index * step) >>> 0;
+
+      let type;
+
+      if (mode === "mixed") {
+        type =
+          index % 2 === 0
+            ? "READ"
+            : "WRITE";
+      } else {
+        type =
+          mode === "read"
+            ? "READ"
+            : "WRITE";
+      }
+
+      list.push({
+        type,
+        address,
+        data:
+          (writeBase + index) >>> 0
+      });
+    }
+
+    return list;
+  }
+
+  function makePhase(
+    node,
+    style,
+    state,
+    message,
+    action = null
+  ) {
+    return {
+      node,
+      style,
+      state,
+      message,
+      action,
+      executed: false
+    };
+  }
+
+  function addLog(message, type = "info") {
+    const line =
+      document.createElement("div");
+
+    line.className =
+      `log-${type}`;
+
+    line.textContent =
+      `[${String(stats.issued).padStart(4, "0")}] ` +
+      message;
+
+    $("eventLog").prepend(line);
+  }
+
+  function makeCompletionPhase(context) {
+    return makePhase(
+      "done",
+      "hit",
+      "COMPLETE",
+      "当前CPU请求完成",
+      () => {
+        stats.completed++;
+        requestState = "COMPLETE";
+
+        /*
+         * COMPLETE阶段不保留上一笔DDR操作，
+         * 但Memory事务历史仍会保留。
+         */
+        setDdrIdle();
+
+        addLog(
+          `请求完成：${context.operation.type} ` +
+          `${hex(context.operation.address)}`,
+          "info"
+        );
+      }
+    );
+  }
+
+  /*
+   * 为一条CPU请求建立阶段计划。
+   *
+   * 这里只建立计划，不提前修改Cache和DDR。
+   * 真正的数据动作在每个Phase进入时执行。
+   */
+  function buildPhasePlan(operation) {
+    const decoded =
+      decodeAddress(operation.address);
+
+    /*
+     * 在请求开始前锁定策略。
+     * 避免用户在事务中间改变下拉框后破坏当前请求。
+     */
+    const hitPolicy =
+      $("writeHitPolicy").value;
+
+    const missPolicy =
+      $("writeMissPolicy").value;
+
+    currentDecode = decoded;
+    memoryViewBase = decoded.lineBase;
+
+    const hitWay =
+      findHitWay(
+        decoded.set,
+        decoded.tag
+      );
+
+    const context = {
+      operation,
+      decoded,
+      hitPolicy,
+      missPolicy,
+      hitWay,
+      victimWay: -1,
+      victimBase: 0,
+      victimData: null,
+      resultValue: null,
+      resultText: "等待Tag比较"
+    };
+
+    currentContext = context;
+
+    const phases = [];
+
+    /*
+     * Phase 1：CPU发出请求。
+     */
+    phases.push(
+      makePhase(
+        "cpu",
+        "active",
+        "CPU_REQUEST",
+        `CPU发出${operation.type}请求：` +
+        `${hex(operation.address)}`,
+        () => {
+          stats.issued++;
+          requestState = "CPU_REQUEST";
+
+          setDdrIdle();
+          resetFillBuffer(decoded.lineBase);
+
+          addLog(
+            `CPU ${operation.type} ` +
+            `${hex(operation.address)}`,
+            "info"
+          );
+        }
+      )
+    );
+
+    /*
+     * Phase 2：地址分解。
+     */
+    phases.push(
+      makePhase(
+        "decode",
+        "active",
+        "ADDRESS_DECODE",
+        `地址分解：Tag ${hex(decoded.tag, 5)}，` +
+        `Set ${decoded.set}，Word ${decoded.word}`
+      )
+    );
+
+    /*
+     * Cache Hit路径。
+     */
+    if (hitWay >= 0) {
+      phases.push(
+        makePhase(
+          "cache",
+          "hit",
+          "CACHE_HIT",
+          `Cache HIT：Set ${decoded.set}，` +
+          `Way ${hitWay}`,
+          () => {
+            stats.hit++;
+            highlightedWay = hitWay;
+            context.resultText =
+              `HIT · Way ${hitWay}`;
+          }
+        )
+      );
+
+      /*
+       * Read Hit。
+       */
+      if (operation.type === "READ") {
+        phases.push(
+          makePhase(
+            "cache",
+            "hit",
+            "CPU_READ_DATA",
+            `CPU读取Way ${hitWay}，` +
+            `Word ${decoded.word}`,
+            () => {
+              const way =
+                cache[decoded.set]
+                  .ways[hitWay];
+
+              context.resultValue =
+                way.data[decoded.word] >>> 0;
+
+              touchWay(
+                decoded.set,
+                hitWay
+              );
+
+              addLog(
+                `READ HIT ${hex(operation.address)} ` +
+                `→ ${hex(context.resultValue)}，` +
+                `Way ${hitWay}`,
+                "hit"
+              );
+            }
+          )
+        );
+      } else {
+        /*
+         * Write Hit先更新Cache。
+         */
+        phases.push(
+          makePhase(
+            "cache",
+            "hit",
+            "CACHE_WRITE",
+            `更新Way ${hitWay}，` +
+            `Word ${decoded.word}`,
+            () => {
+              const way =
+                cache[decoded.set]
+                  .ways[hitWay];
+
+              way.data[decoded.word] =
+                operation.data >>> 0;
+
+              if (hitPolicy === "wb") {
+                way.dirty = true;
+
+                addLog(
+                  `WRITE HIT ${hex(operation.address)} ` +
+                  `← ${hex(operation.data)}，` +
+                  `Way ${hitWay}，Dirty=1`,
+                  "hit"
+                );
+              } else {
+                way.dirty = false;
+
+                addLog(
+                  `WRITE HIT WT ${hex(operation.address)} ` +
+                  `← ${hex(operation.data)}，` +
+                  `Way ${hitWay}`,
+                  "hit"
+                );
+              }
+
+              touchWay(
+                decoded.set,
+                hitWay
+              );
+            }
+          )
+        );
+
+        /*
+         * Write-through Hit再写一个DDR Word。
+         */
+        if (hitPolicy === "wt") {
+          phases.push(
+            makePhase(
+              "ddr",
+              "active",
+              "WRITE_THROUGH",
+              `Write-through写DDR：` +
+              `${hex(operation.address)}`,
+              () => {
+                memoryWrite(
+                  operation.address,
+                  operation.data,
+                  "CPU Write-through",
+                  0,
+                  true
+                );
+              }
+            )
+          );
+        }
+      }
+
+      phases.push(
+        makeCompletionPhase(context)
+      );
+
+      return phases;
+    }
+
+    /*
+     * Cache Miss路径。
+     */
+    phases.push(
+      makePhase(
+        "cache",
+        "miss",
+        "CACHE_MISS",
+        `Cache MISS：Set ${decoded.set}`,
+        () => {
+          stats.miss++;
+          highlightedWay = -1;
+          context.resultText = "MISS";
+        }
+      )
+    );
+
+    /*
+     * Non-write-allocate Write Miss：
+     * 直接写入一个DDR Word，不选择Victim、不Refill。
+     */
+    if (
+      operation.type === "WRITE" &&
+      missPolicy === "nwa"
+    ) {
+      phases.push(
+        makePhase(
+          "ddr",
+          "active",
+          "NWA_DDR_WRITE",
+          `NWA直接写DDR：${hex(operation.address)}`,
+          () => {
+            context.resultText =
+              "MISS · No Allocate";
+
+            memoryWrite(
+              operation.address,
+              operation.data,
+              "CPU Non-write-allocate",
+              0,
+              true
+            );
+
+            addLog(
+              `WRITE MISS NWA ` +
+              `${hex(operation.address)} ` +
+              `← ${hex(operation.data)}`,
+              "miss"
+            );
+          }
+        )
+      );
+
+      phases.push(
+        makeCompletionPhase(context)
+      );
+
+      return phases;
+    }
+
+    /*
+     * Read Miss或Write-allocate Write Miss：
+     * 选择Victim。
+     */
+    const victimWay =
+      chooseVictim(decoded.set);
+
+    const victim =
+      cache[decoded.set].ways[victimWay];
+
+    context.victimWay = victimWay;
+
+    context.victimBase =
+      victim.valid
+        ? lineBaseFromTag(
+            victim.tag,
+            decoded.set
+          )
+        : 0;
+
+    /*
+     * 保存Victim数据快照。
+     * 即使后续Cache内容变化，Write-back数据也不会改变。
+     */
+    context.victimData =
+      victim.data.slice();
+
+    phases.push(
+      makePhase(
+        "cache",
+        "miss",
+        "VICTIM_SELECT",
+        `选择Victim Way ${victimWay}`,
+        () => {
+          highlightedWay = victimWay;
+          context.resultText =
+            `MISS · Victim Way ${victimWay}`;
+        }
+      )
+    );
+
+    /*
+     * Dirty Victim拆分为8个DDR Write Beat。
+     */
+    if (
+      victim.valid &&
+      victim.dirty
+    ) {
+      for (
+        let beat = 0;
+        beat < WORDS;
+        beat++
+      ) {
+        const currentBeat = beat;
+
+        phases.push(
+          makePhase(
+            "ddr",
+            "writeback",
+            "WRITEBACK",
+            `Write-back Beat ${currentBeat} / 7`,
+            () => {
+              const address =
+                (
+                  context.victimBase +
+                  currentBeat * 4
+                ) >>> 0;
+
+              memoryWrite(
+                address,
+                context.victimData[currentBeat],
+                "D-Cache Write-back",
+                currentBeat,
+                currentBeat === WORDS - 1
+              );
+
+              /*
+               * 直到最后一个Beat完成，
+               * 才清除Victim的Dirty。
+               */
+              if (
+                currentBeat === WORDS - 1
+              ) {
+                cache[decoded.set]
+                  .ways[victimWay]
+                  .dirty = false;
+
+                stats.writeback++;
+
+                addLog(
+                  `WRITE-BACK完成：Set ${decoded.set}，` +
+                  `Way ${victimWay}，` +
+                  `Base ${hex(context.victimBase)}`,
+                  "write"
+                );
+              }
+            }
+          )
+        );
+      }
+    }
+
+    /*
+     * 清空并准备Line Fill Buffer。
+     */
+    phases.push(
+      makePhase(
+        "fill",
+        "active",
+        "REFILL_PREPARE",
+        `准备Refill Line ${hex(decoded.lineBase)}`,
+        () => {
+          resetFillBuffer(
+            decoded.lineBase
+          );
+
+          setDdrIdle();
+        }
+      )
+    );
+
+    /*
+     * Refill拆分为8个DDR Read Beat。
+     */
+    for (
+      let beat = 0;
+      beat < WORDS;
+      beat++
+    ) {
+      const currentBeat = beat;
+
+      phases.push(
+        makePhase(
+          "ddr",
+          "active",
+          "REFILL",
+          `DDR Read Beat ${currentBeat} / 7`,
+          () => {
+            const address =
+              (
+                decoded.lineBase +
+                currentBeat * 4
+              ) >>> 0;
+
+            const value =
+              memoryRead(
+                address,
+                "D-Cache Refill",
+                currentBeat,
+                currentBeat === WORDS - 1
+              );
+
+            fillBuffer.address[currentBeat] =
+              address;
+
+            fillBuffer.data[currentBeat] =
+              value;
+
+            fillBuffer.valid[currentBeat] =
+              true;
+
+            fillBuffer.currentBeat =
+              currentBeat;
+
+            fillBuffer.last =
+              currentBeat === WORDS - 1;
+          }
+        )
+      );
+    }
+
+    /*
+     * 8个Read Beat全部完成后，
+     * 才将Fill Buffer安装到Cache。
+     */
+    phases.push(
+      makePhase(
+        "fill",
+        "active",
+        "CACHE_INSTALL",
+        `将Fill Buffer安装到Way ${victimWay}`,
+        () => {
+          const way =
+            cache[decoded.set]
+              .ways[victimWay];
+
+          way.data =
+            fillBuffer.data.slice();
+
+          way.valid = true;
+          way.dirty = false;
+          way.tag = decoded.tag;
+
+          highlightedWay = victimWay;
+          fillBuffer.currentBeat = -1;
+
+          context.resultText =
+            `MISS · Install Way ${victimWay}`;
+
+          setDdrIdle();
+        }
+      )
+    );
+
+    /*
+     * Read Miss完成Refill后，将目标Word交给CPU。
+     */
+    if (operation.type === "READ") {
+      phases.push(
+        makePhase(
+          "cache",
+          "hit",
+          "CPU_READ_DATA",
+          `CPU取得Word ${decoded.word}数据`,
+          () => {
+            const way =
+              cache[decoded.set]
+                .ways[victimWay];
+
+            context.resultValue =
+              way.data[decoded.word] >>> 0;
+
+            touchWay(
+              decoded.set,
+              victimWay
+            );
+
+            addLog(
+              `READ MISS ${hex(operation.address)}，` +
+              `Refill → Set ${decoded.set}，` +
+              `Way ${victimWay}，` +
+              `Data=${hex(context.resultValue)}`,
+              "miss"
+            );
+          }
+        )
+      );
+    } else {
+      /*
+       * Write-allocate：
+       * Refill后更新Cache中的目标Word。
+       */
+      phases.push(
+        makePhase(
+          "cache",
+          "hit",
+          "CPU_WRITE_DATA",
+          `CPU写入Way ${victimWay}，` +
+          `Word ${decoded.word}`,
+          () => {
+            const way =
+              cache[decoded.set]
+                .ways[victimWay];
+
+            way.data[decoded.word] =
+              operation.data >>> 0;
+
+            way.dirty =
+              hitPolicy === "wb";
+
+            touchWay(
+              decoded.set,
+              victimWay
+            );
+
+            addLog(
+              `WRITE MISS WA ${hex(operation.address)} ` +
+              `← ${hex(operation.data)}，` +
+              `Refill → Way ${victimWay}`,
+              "miss"
+            );
+          }
+        )
+      );
+
+      /*
+       * Write-through + Write-allocate：
+       * Cache目标Word更新后，再写一个DDR Word。
+       */
+      if (hitPolicy === "wt") {
+        phases.push(
+          makePhase(
+            "ddr",
+            "active",
+            "WRITE_THROUGH",
+            "Refill后Write-through写DDR",
+            () => {
+              memoryWrite(
+                operation.address,
+                operation.data,
+                "CPU Write-through",
+                0,
+                true
+              );
+            }
+          )
+        );
+      }
+    }
+
+    phases.push(
+      makeCompletionPhase(context)
+    );
+
+    return phases;
+  }
+
+  function clearPath() {
+    [
+      "nodeCpu",
+      "nodeDecode",
+      "nodeCache",
+      "nodeFill",
+      "nodeDdr"
+    ].forEach((id) => {
+      $(id).classList.remove(
+        "active",
+        "hit",
+        "miss",
+        "writeback"
+      );
+    });
+
+    [
+      "arrow1",
+      "arrow2",
+      "arrow3",
+      "arrow4"
+    ].forEach((id) => {
+      $(id).classList.remove("active");
+    });
+  }
+
+  function activateArrow(count) {
+    for (
+      let index = 1;
+      index <= count;
+      index++
+    ) {
+      $(`arrow${index}`)
+        .classList.add("active");
+    }
+  }
+
+  function applyPhase(phase) {
+    clearPath();
+
+    requestState =
+      phase.state || "IDLE";
+
+    let target = null;
+
+    if (phase.node === "cpu") {
+      target = $("nodeCpu");
+    } else if (phase.node === "decode") {
+      target = $("nodeDecode");
+      activateArrow(1);
+    } else if (phase.node === "cache") {
+      target = $("nodeCache");
+      activateArrow(2);
+    } else if (phase.node === "fill") {
+      target = $("nodeFill");
+      activateArrow(3);
+    } else if (phase.node === "ddr") {
+      target = $("nodeDdr");
+      activateArrow(4);
+    } else if (phase.node === "done") {
+      target = $("nodeCpu");
+      activateArrow(2);
+    }
+
+    if (target) {
+      target.classList.add(
+        phase.style || "active"
+      );
+    }
+
+    /*
+     * 同一Phase的数据动作只允许执行一次。
+     */
+    if (
+      !phase.executed &&
+      typeof phase.action === "function"
+    ) {
+      phase.action();
+      phase.executed = true;
+    }
+
+    $("runStatus").textContent =
+      phase.message;
+
+    renderAll();
+  }
+
+  function updateNodeText() {
+    if (!currentOperation) {
+      $("nodeCpuText").textContent =
+        "等待请求";
+
+      $("nodeDecodeText").textContent =
+        "Tag / Set / Word";
+
+      $("nodeCacheText").textContent =
+        "等待Tag比较";
+
+      $("nodeFillText").textContent =
+        "8 × 32-bit";
+
+      $("nodeDdrText").textContent =
+        "Sparse Zero Memory";
+
+      return;
+    }
+
+    $("nodeCpuText").textContent =
+      `${currentOperation.type} ` +
+      `${hex(currentOperation.address)}`;
+
+    $("nodeDecodeText").textContent =
+      `Tag ${hex(currentDecode.tag, 5)} · ` +
+      `Set ${currentDecode.set} · ` +
+      `Word ${currentDecode.word}`;
+
+    $("nodeCacheText").textContent =
+      currentContext
+        ? currentContext.resultText
+        : "等待Tag比较";
+
+    const validCount =
+      fillBuffer.valid
+        .filter(Boolean)
+        .length;
+
+    $("nodeFillText").textContent =
+      `Valid ${validCount} / 8`;
+
+    $("nodeDdrText").textContent =
+      ddrState.operation === "IDLE"
+        ? (
+          `Read ${stats.ddrRead} · ` +
+          `Write ${stats.ddrWrite}`
+        )
+        : (
+          `${ddrState.operation} · ` +
+          `Beat ${ddrState.beat} / 7`
+        );
+  }
+
+  function scheduleNext() {
+    clearTimeout(timer);
+
+    if (
+      !running ||
+      paused
+    ) {
+      return;
+    }
+
+    timer = setTimeout(
+      () => advanceAnimation(true),
+      Number($("speed").value)
+    );
+  }
+
+  function advanceAnimation(automatic) {
+    if (operations.length === 0) {
+      try {
+        operations =
+          buildOperations();
+      } catch (error) {
+        $("runStatus").textContent =
+          `错误：${error.message}`;
+        return;
+      }
+    }
+
+    /*
+     * 上一笔请求的Phase已经执行完毕，
+     * 或当前还没有Phase计划。
+     */
+    if (
+      phasePlan.length === 0 ||
+      phaseIndex >= phasePlan.length
+    ) {
+      if (
+        operationIndex >= operations.length
+      ) {
+        running = false;
+        paused = false;
+
+        clearPath();
+        requestState = "IDLE";
+        setDdrIdle();
+
+        $("runStatus").textContent =
+          `运行完成：共${operations.length}个CPU请求，` +
+          `Hit Rate ${getHitRate()}。`;
+
+        renderAll();
+        return;
+      }
+
+      currentOperation =
+        operations[operationIndex];
+
+      operationIndex++;
+
+      phasePlan =
+        buildPhasePlan(currentOperation);
+
+      phaseIndex = 0;
+    }
+
+    const phase =
+      phasePlan[phaseIndex];
+
+    phaseIndex++;
+
+    applyPhase(phase);
+
+    if (automatic) {
+      scheduleNext();
+    }
+  }
+
+  function getHitRate() {
+    const total =
+      stats.hit + stats.miss;
+
+    if (total === 0) {
+      return "0.00%";
+    }
+
+    return (
+      (
+        stats.hit /
+        total *
+        100
+      ).toFixed(2) + "%"
+    );
+  }
+
+  function startRun() {
+    try {
+      resetModel();
+
+      operations =
+        buildOperations();
+
+      running = true;
+      paused = false;
+
+      addLog(
+        `开始执行，共${operations.length}个CPU请求`,
+        "info"
+      );
+
+      advanceAnimation(true);
+    } catch (error) {
+      $("runStatus").textContent =
+        `错误：${error.message}`;
+    }
+  }
+
+  function pauseRun() {
+    if (!running) {
+      return;
+    }
+
+    paused = true;
+    clearTimeout(timer);
+
+    $("runStatus").textContent =
+      "动画已暂停，可选择继续或单步动画。";
+  }
+
+  function continueRun() {
+    if (operations.length === 0) {
+      startRun();
+      return;
+    }
+
+    if (
+      stats.completed >= operations.length &&
+      phaseIndex >= phasePlan.length
+    ) {
+      return;
+    }
+
+    running = true;
+    paused = false;
+
+    $("runStatus").textContent =
+      "继续自动运行。";
+
+    scheduleNext();
+  }
+
+  function stepRun() {
+    try {
+      if (operations.length === 0) {
+        operations =
+          buildOperations();
+      }
+
+      clearTimeout(timer);
+
+      running = true;
+      paused = true;
+
+      advanceAnimation(false);
+    } catch (error) {
+      $("runStatus").textContent =
+        `错误：${error.message}`;
+    }
+  }
+
+  function restartRun() {
+    try {
+      resetModel();
+
+      operations =
+        buildOperations();
+
+      $("runStatus").textContent =
+        `已清空Cache、Memory和统计。` +
+        `队列中共有${operations.length}个请求，` +
+        `可点击开始运行或单步动画。`;
+
+      renderAll();
+    } catch (error) {
+      $("runStatus").textContent =
+        `错误：${error.message}`;
+    }
+  }
+
+  function renderDecode() {
+    $("decodeOperation").textContent =
+      currentOperation
+        ? currentOperation.type
+        : "—";
+
+    $("decodeAddress").textContent =
+      currentOperation
+        ? hex(currentOperation.address)
+        : "0x00000000";
+
+    $("decodeTag").textContent =
+      hex(currentDecode.tag, 5);
+
+    $("decodeSet").textContent =
+      `${currentDecode.set} ` +
+      `(${hex(currentDecode.set, 2)})`;
+
+    $("decodeWord").textContent =
+      String(currentDecode.word);
+
+    $("decodeByte").textContent =
+      String(currentDecode.byte);
+
+    $("decodeWriteData").textContent =
+      currentOperation &&
+      currentOperation.type === "WRITE"
+        ? hex(currentOperation.data)
+        : "—";
+  }
+
+  function renderStats() {
+    $("statIssued").textContent =
+      stats.issued;
+
+    $("statCompleted").textContent =
+      stats.completed;
+
+    $("statHit").textContent =
+      stats.hit;
+
+    $("statMiss").textContent =
+      stats.miss;
+
+    $("statHitRate").textContent =
+      getHitRate();
+
+    $("statDdrRead").textContent =
+      stats.ddrRead;
+
+    $("statDdrWrite").textContent =
+      stats.ddrWrite;
+
+    $("statWriteback").textContent =
+      stats.writeback;
+
+    $("statProgress").textContent =
+      `${stats.completed} / ${operations.length}`;
+
+    const progress =
+      operations.length === 0
+        ? 0
+        : (
+          stats.completed /
+          operations.length *
+          100
+        );
+
+    $("progressBar").style.width =
+      `${progress}%`;
+  }
+
+  function renderTransaction() {
+    $("txState").textContent =
+      requestState;
+
+    $("txHitWay").textContent =
+      currentContext &&
+      currentContext.hitWay >= 0
+        ? `Way ${currentContext.hitWay}`
+        : "—";
+
+    $("txVictimWay").textContent =
+      currentContext &&
+      currentContext.victimWay >= 0
+        ? `Way ${currentContext.victimWay}`
+        : "—";
+
+    $("txBeat").textContent =
+      ddrState.beat >= 0
+        ? `${ddrState.beat} / 7`
+        : "—";
+
+    /*
+     * 数组索引是Word 0～7。
+     * 显示时反转，形成Line Valid [7:0]。
+     */
+    const validBits =
+      fillBuffer.valid
+        .slice()
+        .reverse()
+        .map((valid) =>
+          valid ? "1" : "0"
+        )
+        .join("");
+
+    $("txLineValid").textContent =
+      validBits;
+
+    const operationElement =
+      $("txDdrOperation");
+
+    operationElement.textContent =
+      ddrState.operation;
+
+    operationElement.classList.remove(
+      "transaction-read",
+      "transaction-write",
+      "transaction-idle"
+    );
+
+    if (ddrState.operation === "READ") {
+      operationElement.classList.add(
+        "transaction-read"
+      );
+    } else if (
+      ddrState.operation === "WRITE"
+    ) {
+      operationElement.classList.add(
+        "transaction-write"
+      );
+    } else {
+      operationElement.classList.add(
+        "transaction-idle"
+      );
+    }
+
+    $("txDdrAddress").textContent =
+      ddrState.operation === "IDLE"
+        ? "—"
+        : hex(ddrState.address);
+
+    $("txDdrData").textContent =
+      ddrState.operation === "IDLE"
+        ? "— / 0"
+        : (
+          `${hex(ddrState.data)} / ` +
+          `${ddrState.last ? 1 : 0}`
+        );
+  }
+
+  function renderFillBuffer() {
+    const container =
+      $("fillBufferGrid");
+
+    container.innerHTML = "";
+
+    for (
+      let wordIndex = 0;
+      wordIndex < WORDS;
+      wordIndex++
+    ) {
+      const item =
+        document.createElement("div");
+
+      const classes = [
+        "fill-buffer-word"
+      ];
+
+      if (
+        fillBuffer.valid[wordIndex]
+      ) {
+        classes.push("valid");
+      }
+
+      if (
+        fillBuffer.currentBeat === wordIndex
+      ) {
+        classes.push("current");
+      }
+
+      if (
+        wordIndex === WORDS - 1 &&
+        fillBuffer.valid[wordIndex] &&
+        fillBuffer.last
+      ) {
+        classes.push("last");
+      }
+
+      item.className =
+        classes.join(" ");
+
+      const address =
+        fillBuffer.valid[wordIndex]
+          ? fillBuffer.address[wordIndex]
+          : (
+            fillBuffer.lineBase +
+            wordIndex * 4
+          ) >>> 0;
+
+      item.innerHTML = `
+        <small>
+          Word ${wordIndex}
+          ${wordIndex === 7 ? " · LAST" : ""}
+        </small>
+
+        <strong>${hex(address)}</strong>
+
+        <code>
+          ${
+            fillBuffer.valid[wordIndex]
+              ? hex(fillBuffer.data[wordIndex])
+              : "Empty"
+          }
+        </code>
+
+        <span>
+          Valid=${fillBuffer.valid[wordIndex] ? 1 : 0}
+        </span>
+      `;
+
+      container.appendChild(item);
+    }
+  }
+
+  function renderCache() {
+    const setIndex =
+      currentDecode.set;
+
+    const set =
+      cache[setIndex];
+
+    $("currentSetLabel").textContent =
+      `Set ${setIndex}`;
+
+    const body =
+      $("cacheBody");
+
+    body.innerHTML = "";
+
+    for (
+      let wayIndex = WAYS - 1;
+      wayIndex >= 0;
+      wayIndex--
+    ) {
+      const way =
+        set.ways[wayIndex];
+
+      const row =
+        document.createElement("tr");
+
+      const rowClasses = [];
+
+      if (!way.valid) {
+        rowClasses.push("invalid-row");
+      }
+
+      if (
+        way.valid &&
+        way.dirty
+      ) {
+        rowClasses.push("dirty-row");
+      }
+
+      if (
+        wayIndex === highlightedWay
+      ) {
+        rowClasses.push("active-row");
+      }
+
+      row.className =
+        rowClasses.join(" ");
+
+      const base =
+        way.valid
+          ? lineBaseFromTag(
+              way.tag,
+              setIndex
+            )
+          : 0;
+
+      let html = `
+        <td>Way ${wayIndex}</td>
+        <td>${way.valid ? 1 : 0}</td>
+        <td>${way.dirty ? 1 : 0}</td>
+
+        <td>
+          ${way.valid ? hex(way.tag, 5) : "—"}
+        </td>
+
+        <td>
+          ${set.ranks[wayIndex]}
+          ${
+            set.ranks[wayIndex] === 0
+              ? " MRU"
+              : (
+                set.ranks[wayIndex] === 3
+                  ? " LRU"
+                  : ""
+              )
+          }
+        </td>
+      `;
+
+      for (
+        let wordIndex = 0;
+        wordIndex < WORDS;
+        wordIndex++
+      ) {
+        const classes = [];
+
+        if (
+          wordIndex === currentDecode.word
+        ) {
+          classes.push("active-word");
+        }
+
+        if (
+          wayIndex === highlightedWay &&
+          wordIndex === currentDecode.word
+        ) {
+          classes.push("hit-word");
+        }
+
+        html += `
+          <td class="${classes.join(" ")}">
+            <span class="word-address">
+              ${
+                way.valid
+                  ? hex(base + wordIndex * 4)
+                  : "—"
+              }
+            </span>
+
+            <span class="word-value">
+              ${
+                way.valid
+                  ? hex(way.data[wordIndex])
+                  : "Invalid"
+              }
+            </span>
+          </td>
+        `;
+      }
+
+      row.innerHTML = html;
+      body.appendChild(row);
+    }
+  }
+
+  function renderMemoryLine() {
+    const container =
+      $("memoryLine");
+
+    container.innerHTML = "";
+
+    for (
+      let wordIndex = 0;
+      wordIndex < WORDS;
+      wordIndex++
+    ) {
+      const address =
+        (
+          memoryViewBase +
+          wordIndex * 4
+        ) >>> 0;
+
+      const item =
+        document.createElement("div");
+
+      const classes = [
+        "memory-word"
+      ];
+
+      if (
+        ddrState.operation !== "IDLE" &&
+        ddrState.address === address
+      ) {
+        classes.push(
+          "current-memory-word"
+        );
+      }
+
+      item.className =
+        classes.join(" ");
+
+      item.innerHTML = `
+        <small>Word ${wordIndex}</small>
+        <strong>${hex(address)}</strong>
+        <code>${hex(peekMemory(address))}</code>
+      `;
+
+      container.appendChild(item);
+    }
+  }
+
+  function renderRecentMemory() {
+    const container =
+      $("recentMemory");
+
+    container.innerHTML = "";
+
+    const events =
+      memoryEvents.slice(-8).reverse();
+
+    if (events.length === 0) {
+      for (
+        let index = 0;
+        index < WORDS;
+        index++
+      ) {
+        events.push({
+          operation: "—",
+          address:
+            (
+              memoryViewBase +
+              index * 4
+            ) >>> 0,
+          source: "未访问"
+        });
+      }
+    }
+
+    events.forEach(
+      (event, index) => {
+        const item =
+          document.createElement("div");
+
+        const operationClass =
+          event.operation === "READ"
+            ? "read"
+            : (
+              event.operation === "WRITE"
+                ? "write"
+                : ""
+            );
+
+        item.className =
+          `recent-word ${operationClass}`;
+
+        item.title =
+          event.source;
+
+        item.innerHTML = `
+          <small>最近 ${index + 1}</small>
+
+          <strong>
+            ${hex(event.address)}
+          </strong>
+
+          <code>
+            ${hex(peekMemory(event.address))}
+          </code>
+
+          <span>
+            ${event.operation} · ${event.source}
+          </span>
+        `;
+
+        container.appendChild(item);
+      }
+    );
+  }
+
+  function renderAll() {
+    renderDecode();
+    renderStats();
+    renderTransaction();
+    renderFillBuffer();
+    renderCache();
+    renderMemoryLine();
+    renderRecentMemory();
+    updateNodeText();
+  }
+
+  $("startButton").addEventListener(
+    "click",
+    startRun
+  );
+
+  $("pauseButton").addEventListener(
+    "click",
+    pauseRun
+  );
+
+  $("continueButton").addEventListener(
+    "click",
+    continueRun
+  );
+
+  $("stepButton").addEventListener(
+    "click",
+    stepRun
+  );
+
+  $("restartButton").addEventListener(
+    "click",
+    restartRun
+  );
+
+  resetModel();
+</script>
+
+</body>
+</html>
